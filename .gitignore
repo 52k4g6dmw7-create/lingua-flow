@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# Build output — Render 会在服务器重新 build，dist 不需上传
+dist/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+Thumbs.db
+
+# Env
+.env
+.env.*
+!.env.example
+
+# SPA static server (临时本地预览用，不上传)
+spa_server.py
+.bin/

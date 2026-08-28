@@ -1,0 +1,63 @@
+# Render Blueprint — LinguaFlow (多语种在线学习平台 · 纯前端 SPA 静态站点)
+# 部署后即可获得永久 *.onrender.com HTTPS 域名，可随时转发给朋友体验。
+# 免费计划（plan: free）永久可用，无数据库依赖，纯静态 + React Router。
+
+services:
+  - type: web
+    name: linguaflow
+    runtime: static
+    plan: free
+    branch: main
+    autoDeploy: true
+
+    # Build — Render 会拉取 main 分支 → 安装 npm 依赖 → 执行 vite build
+    # 产物目录 dist/ 作为静态发布路径（Vite 默认输出）
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./dist
+
+    # ===== SPA 路由支持（关键！） =====
+    # React Router 使用 BrowserRouter，所有客户端路由必须 rewrite 回 /index.html
+    # 否则直接访问 /login、/app 等路径会返回 Render 404。
+    routes:
+      # 1. 真实静态文件先行：已存在的 dist/ 下文件会被 Render 优先命中，不会走 rewrite
+      # 2. 其他一切路径 → /index.html，交给前端 Router 决定渲染哪一页
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+    # ===== 缓存与安全头 =====
+    headers:
+      # Vite 产物 /assets/*.js / *.css 带 hash，永久缓存
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+
+      # 图片等其他静态资源缓存 1 小时
+      - path: /*.jpg
+        name: Cache-Control
+        value: public, max-age=3600
+      - path: /*.svg
+        name: Cache-Control
+        value: public, max-age=3600
+      - path: /*.png
+        name: Cache-Control
+        value: public, max-age=3600
+
+      # index.html 永不缓存，保证更新即时生效
+      - path: /index.html
+        name: Cache-Control
+        value: no-cache, no-store, must-revalidate
+      - path: /
+        name: Cache-Control
+        value: no-cache, no-store, must-revalidate
+
+      # 安全基础头
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: Permissions-Policy
+        value: microphone=(self), camera=(self)   # 口语跟读模块需要 microphone 权限
