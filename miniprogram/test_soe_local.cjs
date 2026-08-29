@@ -22,6 +22,9 @@
 // ============================================================
 
 const https = require('https');
+const http = require('http');
+const net = require('net');
+const tls = require('tls');
 const crypto = require('crypto');
 const zlib = require('zlib');
 
@@ -101,11 +104,78 @@ function tc3Sign(secretId, secretKey, service, action, version, payload) {
   };
 }
 
+function parseProxyUrl() {
+  const u = process.env.HTTPS_PROXY || process.env.https_proxy || process.env.HTTP_PROXY || process.env.http_proxy;
+  if (!u) return null;
+  // 兼容 http://user:pass@host:port / http://host:port
+  try {
+    const m = u.match(/^(https?):\/\/(?:([^:@]+)(?::([^@]+))?@)?([^:\/]+)(?::(\d+))?/);
+    if (!m) return null;
+    return {
+      protocol: m[1],
+      auth: m[2] ? (m[2] + (m[3] ? ':' + m[3] : '')) : null,
+      host: m[4],
+      port: parseInt(m[5] || (m[1] === 'https' ? '443' : '80'), 10)
+    };
+  } catch (e) { return null; }
+}
+
 function rawHttpsJson(hostname, path, headers, body) {
   return new Promise((resolve, reject) => {
-    const req = https.request({
-      method: 'POST', hostname, port: 443, path, headers, timeout: 20000
-    }, (res) => {
+    const timeoutMs = 20000;
+    const proxy = parseProxyUrl();
+
+    // —— 方案 A：无代理 → 直接 HTTPS ——
+    if (!proxy) {
+      const req = https.request({
+        method: 'POST', hostname, port: 443, path, headers, timeout: timeoutMs
+      }, onResponse);
+      req.on('error', reject);
+      req.write(body);
+      req.end();
+      return;
+    }
+
+    // —— 方案 B：有代理 → 用 HTTP CONNECT 开隧道再套 TLS ——
+    const connectReq = http.request({
+      method: 'CONNECT',
+      protocol: proxy.protocol === 'https:' ? 'https:' : 'http:',
+      hostname: proxy.host,
+      port: proxy.port,
+      path: hostname + ':443',
+      headers: Object.assign(
+        { 'Host': hostname + ':443', 'Proxy-Connection': 'keep-alive' },
+        proxy.auth ? { 'Proxy-Authorization': 'Basic ' + Buffer.from(proxy.auth, 'utf8').toString('base64') } : {}
+      ),
+      timeout: timeoutMs
+    });
+    connectReq.once('connect', (res, socket, head) => {
+      if (res.statusCode !== 200) {
+        socket.destroy();
+        return reject(new Error('Proxy CONNECT failed: HTTP ' + res.statusCode));
+      }
+      // 在 CONNECT 出来的 socket 上建 TLS
+      const tlsSocket = tls.connect({
+        socket, servername: hostname, rejectUnauthorized: true
+      }, () => {
+        // 构造 HTTPS 请求（底层用已握手的 TLSSocket）
+        const req = https.request({
+          method: 'POST', hostname, port: 443, path, headers,
+          createConnection: () => tlsSocket,
+          timeout: timeoutMs
+        }, onResponse);
+        req.on('error', reject);
+        req.write(body);
+        req.end();
+      });
+      tlsSocket.on('error', reject);
+    });
+    connectReq.on('error', reject);
+    connectReq.on('timeout', () => { connectReq.destroy(new Error('Proxy CONNECT timeout')); });
+    connectReq.end();
+
+    // —— 响应处理（共享）——
+    function onResponse(res) {
       let chunks = [];
       res.on('data', (c) => chunks.push(c));
       res.on('end', () => {
@@ -120,10 +190,7 @@ function rawHttpsJson(hostname, path, headers, body) {
         try { resolve({ statusCode: res.statusCode, headers: res.headers, data: JSON.parse(raw), raw }); }
         catch (e) { resolve({ statusCode: res.statusCode, headers: res.headers, raw }); }
       });
-    });
-    req.on('error', reject);
-    req.write(body);
-    req.end();
+    }
   });
 }
 
@@ -185,16 +252,22 @@ async function main() {
     console.error('   Message :', r.Error.Message);
     console.error('   RequestId:', r.RequestId || '');
     console.error('\n—— 常见错误排查 ——');
-    if (String(r.Error.Code).includes('Signature') || String(r.Error.Code).includes('AuthFailure')) {
+    const code = String(r.Error.Code || '');
+    const msg  = String(r.Error.Message || '');
+    if (code.includes('AccountUnavailable') || msg.includes('未开通') || msg.includes('欠费')) {
+      console.error('  → ⭐ 账号未开通 / 欠费隔离（最常见）：');
+      console.error('    前往 https://console.cloud.tencent.com/soe 点"立即开通"');
+      console.error('    若已开通但仍提示，请确认腾讯云主账号余额 ≥ 0 元，不要欠费隔离状态');
+    } else if (code.includes('Signature') || code.includes('AuthFailure') && !code.includes('Account')) {
       console.error('  → 鉴权签名问题：');
       console.error('    ① 核对 SOE_SECRET_ID / SOE_SECRET_KEY 是否完全复制（没有前后空格）');
       console.error('    ② 本地系统时间是否准确？TC3 签名要求本机 UTC 时间误差 ≤ 5 分钟');
       console.error('    ③ SecretId/SecretKey 对是否已启用，且未被禁用/删除');
-    } else if (String(r.Error.Code).includes('UnauthorizedOperation') || String(r.Error.Message).includes('开通')) {
+    } else if (code.includes('UnauthorizedOperation') || msg.includes('开通')) {
       console.error('  → 服务未开通：前往 https://console.cloud.tencent.com/soe 开通"智聆口语评测"');
-    } else if (String(r.Error.Code).includes('InvalidParameter') || String(r.Error.Code).includes('Missing')) {
+    } else if (code.includes('InvalidParameter') || code.includes('Missing')) {
       console.error('  → 参数错误：检查 RefText / ServerType / VoiceEncodeType 是否与脚本一致');
-    } else if (String(r.Error.Code).includes('LimitExceeded') || String(r.Error.Code).includes('RequestLimitExceeded')) {
+    } else if (code.includes('LimitExceeded') || code.includes('RequestLimitExceeded')) {
       console.error('  → 超出免费额度：前往 https://console.cloud.tencent.com/soe 购买资源包或升级');
     }
     process.exit(4);
