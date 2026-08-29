@@ -192,6 +192,19 @@ Page({
 
   // 开始朗读
   onStartRead: function () {
+    const block = app.requireVip();
+    if (block && block.blocked) {
+      wx.showModal({
+        title: block.title,
+        content: block.content,
+        confirmText: block.confirmText || (i18n.getLang()==='zh'?'开通会员':'Upgrade'),
+        cancelText: i18n.getLang()==='zh'?'稍后':'Later',
+        success(res){
+          if (res.confirm) wx.navigateTo({ url: '/pages/vip/vip?from=index' });
+        }
+      });
+      return;
+    }
     wx.navigateTo({
       url: '/pages/read/read?plan=' + encodeURIComponent(this.data.currentPlanKey)
     });

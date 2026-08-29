@@ -151,6 +151,28 @@
   color: #9b59b6;
 }
 
+.settings-icon-gold {
+  background: linear-gradient(135deg, #fff4cc, #ffe18a);
+  color: #d68e00;
+}
+
+/* VIP 入口 */
+.vip-entry {
+  background: linear-gradient(135deg, rgba(255,244,204,0.18), rgba(255,255,255,1));
+}
+.vip-label {
+  display: inline-block;
+  padding: 6rpx 18rpx;
+  border-radius: 10rpx;
+  font-size: 22rpx;
+  font-weight: 700;
+  margin-right: 10rpx;
+}
+.vip-label.pro      { background: linear-gradient(135deg,#f39c12,#d68e00); color:#fff; }
+.vip-label.trial    { background: #e3f6ff; color: #2980b9; }
+.vip-label.expired  { background: #fdecea; color: #c0392b; }
+.ml { margin-left: 10rpx; }
+
 .settings-info {
   flex: 1;
   min-width: 0;

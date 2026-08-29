@@ -1,0 +1,9 @@
+{
+  "name": "createOrder",
+  "version": "1.0.0",
+  "description": "LinguaSpeak VIP - create wx virtual payment order & handle result",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

@@ -25,6 +25,14 @@ const CONFIG = {
     // 是否使用云数据库存课程（关了就用本地静态数据，发现页仍能展示）
     ENABLE_CLOUD_COURSES: true,
 
+    // 是否启用会员系统（1小时免费 + 付费套餐 + 激活码）
+    // 设 false 时跳过会员拦截，所有功能免费用（本地开发调试用）
+    ENABLE_VIP: true,
+
+    // 是否启用微信虚拟支付（个人号不可用，企业主体需到mp后台开通虚拟支付）
+    // 若关了，仍可通过"激活码通道"完成会员开通
+    ENABLE_WX_PAY: true,
+
     // 调试模式：true 时云函数失败会 console.error 并 toast 错误详情
     DEBUG: true
   },
@@ -36,6 +44,52 @@ const CONFIG = {
     ja: 220,
     ko: 220,
     fr: 160
+  },
+
+  // === 会员配置（新用户首登起1小时免费，之后需要开通会员） ===
+  VIP: {
+    // 免费试用时长，单位：分钟（默认 60 分钟）
+    FREE_TRIAL_MINUTES: 60,
+
+    // 套餐定义 —— 前台展示与后端鉴权以 PLAN_KEY 为唯一键，禁止随意改动
+    PLANS: [
+      {
+        planKey: 'pro_2year',
+        nameI18nKey: 'vip_plan_2year',
+        price: 4980,      // 单位：分，即 49.80 元
+        priceLabel: '¥49.8',
+        durationType: 'years', // years / forever
+        durationValue: 2,      // 2 年
+        recommend: false,
+        descI18nKey: 'vip_plan_2year_desc',
+        badgeI18nKey: 'vip_badge_popular'
+      },
+      {
+        planKey: 'pro_forever',
+        nameI18nKey: 'vip_plan_forever',
+        price: 9900,      // 单位：分，即 99.00 元
+        priceLabel: '¥99',
+        durationType: 'forever',
+        durationValue: 0,
+        recommend: true,
+        descI18nKey: 'vip_plan_forever_desc',
+        badgeI18nKey: 'vip_badge_best'
+      }
+    ],
+
+    // 微信虚拟支付商品ID（可选，对应 mp.weixin.qq.com -> 功能 -> 虚拟支付 -> 商品管理里录入的 out_product_id）
+    // 若为空则使用 planKey 作为 out_product_id
+    WX_PAY_PRODUCT_IDS: {
+      pro_2year: 'lingua_pro_2year_498',
+      pro_forever: 'lingua_pro_forever_990'
+    },
+
+    // 虚拟支付环境：0 = 正式环境，1 = 沙箱环境（开通虚拟支付前建议先用沙箱联调）
+    WX_PAY_ENV: 0,
+
+    // 支付成功回调通知 URL（可选，如果后续接了自有服务器通知的话）
+    // 使用云开发默认不需要配，直接在云函数里处理支付结果
+    PAY_NOTIFY_URL: ''
   }
 };
 

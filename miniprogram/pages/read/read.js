@@ -267,6 +267,20 @@ Page({
   // ============ 录音操作 ============
   onStartRecord: function () {
     const that = this;
+    // 会员拦截：录音属于核心训练能力
+    const block = app.requireVip();
+    if (block && block.blocked) {
+      wx.showModal({
+        title: block.title,
+        content: block.content,
+        confirmText: block.confirmText || (i18n.getLang()==='zh'?'开通会员':'Upgrade'),
+        cancelText: i18n.getLang()==='zh'?'稍后':'Later',
+        success(res){
+          if (res.confirm) wx.navigateTo({ url: '/pages/vip/vip?from=read' });
+        }
+      });
+      return;
+    }
     if (!recorderManager) this.initRecorder();
     this.setData({ result: null, recognizedText: '' });
     wx.authorize({

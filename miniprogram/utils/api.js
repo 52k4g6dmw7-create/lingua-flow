@@ -383,6 +383,109 @@ function getWechatSIRecognizer() {
   }
 }
 
+// ====================== 会员系统 ======================
+
+/**
+ * 检查免费/会员状态
+ */
+function checkVipStatus() {
+  const freeMinutes = CONFIG.VIP && CONFIG.VIP.FREE_TRIAL_MINUTES ? CONFIG.VIP.FREE_TRIAL_MINUTES : 60;
+  return cloud.call('checkVipStatus', { action: 'check', freeMinutes }, {
+    showErrorToast: false,
+    fallback: {
+      canUseCore: true,
+      _fallback: true,
+      freeTrial: { active: true, remainingMinutes: freeMinutes, remainingSeconds: 0, remainingMs: freeMinutes * 60000 },
+      vip: { active: false, planKey: null, isForever: false, daysLeft: 0 },
+      _ui: { needUpgrade: false, freeAlmostGone: false, expiredVip: false }
+    }
+  }).then(res => res.result || {});
+}
+
+/**
+ * 激活码兑换
+ */
+function redeemActivationCode(code) {
+  return cloud.call('activateKey', { action: 'redeem', code }, {
+    loading: true,
+    loadingText: '兑换中...',
+    fallback: { redeemed: false, errorCode: 9999, errorMsg: '云环境未配置，无法兑换激活码', _fallback: true }
+  }).then(res => res.result || {});
+}
+
+/**
+ * 管理端批量生成激活码（需要 adminKey）
+ */
+function generateActivationCodes(opts) {
+  opts = opts || {};
+  return cloud.call('activateKey', {
+    action: 'generate',
+    planKey: opts.planKey,
+    count: opts.count || 1,
+    batch: opts.batch,
+    remark: opts.remark,
+    price: opts.price,
+    adminKey: opts.adminKey || ''
+  }, {
+    loading: true,
+    loadingText: '生成中...',
+    fallback: { generated: 0, list: [], _fallback: true }
+  }).then(res => res.result || {});
+}
+
+/**
+ * 创建支付订单（企业号开通虚拟支付后可用）
+ */
+function createVipOrder(planKey) {
+  const payEnv = (CONFIG.VIP && Number(CONFIG.VIP.WX_PAY_ENV)) || 0;
+  let outProductId = '';
+  if (CONFIG.VIP && CONFIG.VIP.WX_PAY_PRODUCT_IDS) {
+    outProductId = CONFIG.VIP.WX_PAY_PRODUCT_IDS[planKey] || '';
+  }
+  return cloud.call('createOrder', {
+    action: 'create',
+    planKey: planKey,
+    payEnv: payEnv,
+    outProductId: outProductId
+  }, {
+    loading: true,
+    loadingText: '创建订单中...',
+    fallback: {
+      errorCode: 9999,
+      errorMsg: '云环境未配置，无法创建订单',
+      fallbackHint: '您仍可使用【激活码】通道开通会员',
+      _fallback: true
+    }
+  }).then(res => res.result || {});
+}
+
+/**
+ * 支付成功后验单并开通会员
+ */
+function verifyVipOrder(outTradeNo) {
+  const payEnv = (CONFIG.VIP && Number(CONFIG.VIP.WX_PAY_ENV)) || 0;
+  return cloud.call('createOrder', {
+    action: 'verify',
+    outTradeNo: outTradeNo,
+    payEnv: payEnv
+  }, {
+    loading: true,
+    loadingText: '开通中...',
+    fallback: { vipGranted: false, _fallback: true }
+  }).then(res => res.result || {});
+}
+
+/**
+ * Mock 开通会员（本地调试用；线上 VIP_DISABLE_MOCK=1 会被拒）
+ */
+function mockOpenVip(planKey) {
+  return cloud.call('createOrder', { action: 'mock_success', planKey }, {
+    loading: true,
+    loadingText: '模拟开通中...',
+    fallback: { vipGranted: false, _fallback: true }
+  }).then(res => res.result || {});
+}
+
 module.exports = {
   // 用户
   login: login,
@@ -404,5 +507,12 @@ module.exports = {
   // 课程
   listCourses: listCourses,
   // 插件
-  getWechatSIRecognizer: getWechatSIRecognizer
+  getWechatSIRecognizer: getWechatSIRecognizer,
+  // 会员
+  checkVipStatus: checkVipStatus,
+  redeemActivationCode: redeemActivationCode,
+  generateActivationCodes: generateActivationCodes,
+  createVipOrder: createVipOrder,
+  verifyVipOrder: verifyVipOrder,
+  mockOpenVip: mockOpenVip
 };

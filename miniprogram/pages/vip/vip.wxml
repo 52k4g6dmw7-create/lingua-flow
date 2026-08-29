@@ -1,0 +1,144 @@
+<view class="vip-page">
+  <!-- 顶部 hero -->
+  <view class="hero">
+    <view class="hero-bg"></view>
+    <view class="hero-content">
+      <view class="hero-title">{{locale.vip_hero_title || '升级 LinguaSpeak Pro'}}</view>
+      <view class="hero-sub">{{locale.vip_hero_sub || '解锁全部多语言朗读训练，AI精准评分'}}</view>
+
+      <!-- 用户当前状态卡片 -->
+      <view class="status-card" wx:if="{{statusReady}}">
+        <block wx:if="{{vip.active}}">
+          <view class="status-line">
+            <text class="status-tag pro">PRO</text>
+            <text class="status-text">{{vip.isForever ? (locale.vip_forever_active || '永久会员') : (locale.vip_days_left_prefix || '剩余') + vip.daysLeft + (locale.vip_days_left_suffix || '天')}}</text>
+          </view>
+          <view class="status-sub">{{vip.isForever ? (locale.vip_forever_desc || '不限时长，永久使用') : (vip.planKey === 'pro_2year' ? (locale.vip_plan_2year || '两年期会员') : vip.planKey)}}</view>
+        </block>
+        <block wx:elif="{{freeTrial.active}}">
+          <view class="status-line">
+            <text class="status-tag trial">{{locale.vip_trial_tag || '免费试用'}}</text>
+            <text class="status-text">{{locale.vip_trial_remain_prefix || '还剩 '}} {{freeTrial.remainingMinutes}}:{{freeTrialRemainingSecText}} {{locale.vip_trial_remain_suffix || ''}}</text>
+          </view>
+          <view class="status-sub">{{locale.vip_trial_desc || '60分钟完整功能免费体验，请在结束前开通Pro'}}</view>
+        </block>
+        <block wx:else>
+          <view class="status-line">
+            <text class="status-tag expire">{{locale.vip_expired_tag || '免费已结束'}}</text>
+            <text class="status-text">{{locale.vip_expired_text || '升级后立即解锁所有功能'}}</text>
+          </view>
+          <view class="status-sub">{{locale.vip_expired_desc || '支持微信支付一键开通 & 激活码兑换两种方式'}}</view>
+        </block>
+      </view>
+      <view class="status-card placeholder" wx:else>
+        <view class="ph"></view>
+        <view class="ph ph-sm"></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 套餐选择 -->
+  <view class="section">
+    <view class="section-title">{{locale.vip_section_plan || '选择套餐'}}</view>
+    <view class="plan-list">
+      <view class="plan-item {{selectedPlan === item.planKey ? 'active' : ''}}"
+            wx:for="{{plans}}" wx:key="planKey"
+            data-plan="{{item.planKey}}" bindtap="onSelectPlan">
+        <view class="badge" wx:if="{{item.badgeText}}">{{item.badgeText}}</view>
+        <view class="plan-name">{{item.nameText}}</view>
+        <view class="plan-price">
+          <text class="currency">¥</text>
+          <text class="amount">{{item.priceAmountText}}</text>
+        </view>
+        <view class="plan-desc">{{item.descText}}</view>
+        <view class="plan-check">
+          <view class="check-circle {{selectedPlan === item.planKey ? 'checked' : ''}}"></view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 权益列表 -->
+  <view class="section">
+    <view class="section-title">{{locale.vip_section_feature || 'Pro 会员权益'}}</view>
+    <view class="feature-grid">
+      <view class="feature-item">
+        <view class="feature-ic">🎙️</view>
+        <view class="feature-name">{{locale.vip_feat_1_name || '无限录音训练'}}</view>
+        <view class="feature-desc">{{locale.vip_feat_1_desc || '每天不限时长不限次数'}}</view>
+      </view>
+      <view class="feature-item">
+        <view class="feature-ic">🎯</view>
+        <view class="feature-name">{{locale.vip_feat_2_name || 'AI精准评分'}}</view>
+        <view class="feature-desc">{{locale.vip_feat_2_desc || '同声传译+编辑距离算法'}}</view>
+      </view>
+      <view class="feature-item">
+        <view class="feature-ic">🌐</view>
+        <view class="feature-name">{{locale.vip_feat_3_name || '5国语言'}}</view>
+        <view class="feature-desc">{{locale.vip_feat_3_desc || '中/英/日/韩/法 全部解锁'}}</view>
+      </view>
+      <view class="feature-item">
+        <view class="feature-ic">📚</view>
+        <view class="feature-name">{{locale.vip_feat_4_name || '自定义内容'}}</view>
+        <view class="feature-desc">{{locale.vip_feat_4_desc || '上传任意文本/TXT做训练'}}</view>
+      </view>
+      <view class="feature-item">
+        <view class="feature-ic">☁️</view>
+        <view class="feature-name">{{locale.vip_feat_5_name || '云端同步'}}</view>
+        <view class="feature-desc">{{locale.vip_feat_5_desc || '多设备进度/录音/历史互通'}}</view>
+      </view>
+      <view class="feature-item">
+        <view class="feature-ic">⭐</view>
+        <view class="feature-name">{{locale.vip_feat_6_name || '动态课程'}}</view>
+        <view class="feature-desc">{{locale.vip_feat_6_desc || '运营课表持续更新中'}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 激活码通道 -->
+  <view class="section">
+    <view class="section-title">
+      {{locale.vip_section_code || '激活码兑换'}}
+      <text class="subtitle-hint">{{locale.vip_code_hint || '(已有激活码？从这里兑换)'}}</text>
+    </view>
+    <view class="code-box">
+      <input class="code-input"
+             placeholder="{{locale.vip_code_ph || '如 LS-PRO-XXXX-XXXX-XXXX'}}"
+             value="{{activationInput}}"
+             bindinput="onCodeInput"
+             maxlength="28"
+             confirm-type="done"/>
+      <button class="code-btn" bindtap="onRedeemCode" disabled="{{redeeming}}">
+        {{redeeming ? (locale.vip_code_ing || '兑换中') : (locale.vip_code_btn || '立即兑换')}}
+      </button>
+    </view>
+    <view class="code-tip">{{locale.vip_code_tip || '支持通过淘宝/经销商/客服等渠道获取激活码，个人小程序无法开通微信支付时仍可使用本通道。'}}</view>
+  </view>
+
+  <!-- 底部按钮 -->
+  <view class="buy-bar">
+    <block wx:if="{{enableWxPay}}">
+      <button class="buy-btn {{vip.active ? 'renew' : 'primary'}}" bindtap="onBuy" disabled="{{paying}}">
+        <block wx:if="{{paying}}">{{locale.vip_buy_ing || '处理中...'}}</block>
+        <block wx:elif="{{vip.active}}">{{locale.vip_btn_renew || '续费 / 延长'}}</block>
+        <block wx:else>{{selectedPlan === 'pro_forever' ? (locale.vip_btn_buy_forever || '¥99 永久开通') : (locale.vip_btn_buy_2year || '¥49.8 开通两年')}}</block>
+      </button>
+    </block>
+    <block wx:else>
+      <button class="buy-btn disabled" disabled="true">
+        {{locale.vip_pay_disabled || '当前未开启微信支付'}}
+      </button>
+      <view class="code-only-hint">{{locale.vip_use_code_only || '请使用上方【激活码兑换】方式开通（个人小程序不支持虚拟支付）'}}</view>
+    </block>
+  </view>
+  <view class="page-bottom-pad"></view>
+
+  <!-- 调试：mock 按钮（仅云未配置或开发者工具显示） -->
+  <view class="debug-panel" wx:if="{{showMockBtn}}">
+    <view class="debug-title">🔧 开发调试（上线后消失）</view>
+    <view class="debug-btns">
+      <button size="mini" bindtap="onMock2y">Mock开通两年</button>
+      <button size="mini" type="primary" bindtap="onMockForever">Mock开通永久</button>
+    </view>
+  </view>
+</view>

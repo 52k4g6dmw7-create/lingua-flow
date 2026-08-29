@@ -35,7 +35,11 @@ Page({
     // 功能开关
     enablePhoneAuth: true,
     // 云就绪状态
-    cloudReady: false
+    cloudReady: false,
+    // 会员入口显示
+    vipActive: false,
+    vipFreeActive: false,
+    vipStatusText: ''
   },
 
   onLoad: function (options) {
@@ -46,6 +50,7 @@ Page({
     this.initData();
     this.refreshUserInfo();
     this.calcCacheSize();
+    this.refreshVipUI();
 
     if (options && options.lang === '1') {
       setTimeout(() => this.setData({ showLangModal: true }), 300);
@@ -58,6 +63,51 @@ Page({
     this.setData({
       cloudReady: !!CONFIG.isCloudConfigured()
     });
+    this.refreshVipUI();
+  },
+
+  // ===== 会员入口 UI 刷新 =====
+  refreshVipUI: function () {
+    const that = this;
+    const lang = i18n.getLang();
+    const VIP_DISABLED = CONFIG.FEATURES && CONFIG.FEATURES.ENABLE_VIP === false;
+    if (VIP_DISABLED) {
+      that.setData({ vipActive: true, vipFreeActive: false, vipStatusText: lang === 'zh' ? '会员系统已关闭（开发模式）' : 'VIP disabled (dev mode)' });
+      return;
+    }
+    app.refreshVipStatus().then((st) => {
+      const s = st || {};
+      const freeTrial = s.freeTrial || {};
+      const vip = s.vip || {};
+      let text = '';
+      if (vip.active) {
+        if (vip.isForever) {
+          text = lang === 'zh' ? '永久Pro · 终身使用' : 'Lifetime Pro · Forever valid';
+        } else {
+          const d = Number(vip.daysLeft) || 0;
+          text = lang === 'zh' ? `剩余 ${d} 天 · 到期自动续费可延长` : `${d} days left · Extend anytime`;
+        }
+      } else if (freeTrial.active) {
+        const m = Number(freeTrial.remainingMinutes) || 0;
+        const sec = Number(freeTrial.remainingSeconds) || 0;
+        text = lang === 'zh'
+          ? `免费试用还剩 ${m}:${String(sec).padStart(2,'0')}，结束后需开通Pro`
+          : `${m}:${String(sec).padStart(2,'0')} free trial left. Upgrade after.`;
+      } else {
+        text = lang === 'zh'
+          ? '免费试用已结束，立即开通Pro继续训练'
+          : 'Free trial ended. Upgrade to Pro to continue.';
+      }
+      that.setData({
+        vipActive: !!vip.active,
+        vipFreeActive: !vip.active && !!freeTrial.active,
+        vipStatusText: text
+      });
+    }).catch(() => {});
+  },
+
+  onOpenVip: function () {
+    wx.navigateTo({ url: '/pages/vip/vip?from=settings' });
   },
 
   // ===== 初始化基础数据 =====

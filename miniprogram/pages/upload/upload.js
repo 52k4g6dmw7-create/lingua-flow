@@ -154,6 +154,20 @@ Page({
   // 真实提交
   onStartTraining: function () {
     const that = this;
+    // 会员拦截：上传解析属于核心训练能力
+    const block = app.requireVip();
+    if (block && block.blocked) {
+      wx.showModal({
+        title: block.title,
+        content: block.content,
+        confirmText: block.confirmText || (i18n.getLang()==='zh'?'开通会员':'Upgrade'),
+        cancelText: i18n.getLang()==='zh'?'稍后':'Later',
+        success(res){
+          if (res.confirm) wx.navigateTo({ url: '/pages/vip/vip?from=upload' });
+        }
+      });
+      return;
+    }
     const text = this.data.inputText;
     const file = this.data.selectedFile;
 

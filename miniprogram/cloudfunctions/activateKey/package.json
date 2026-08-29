@@ -1,0 +1,9 @@
+{
+  "name": "activateKey",
+  "version": "1.0.0",
+  "description": "LinguaSpeak VIP - redeem activation code / 激活码兑换会员",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

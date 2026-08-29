@@ -42,6 +42,9 @@ App({
 
     // ====== 进度数据 ======
     this.initProgressData();
+
+    // ====== 会员状态异步刷新（不阻塞启动，在用到 requireVip 时会再次确保） ======
+    setTimeout(() => { this.refreshVipStatus().catch(() => {}); }, 800);
   },
 
   onShow: function () {
@@ -52,6 +55,8 @@ App({
     if (this.globalData.openid) {
       api.updateUser({ lastActiveAt: Date.now() }).catch(() => {});
     }
+    // 回到前台也刷新会员状态（判断免费时间是否到期）
+    setTimeout(() => { this.refreshVipStatus().catch(() => {}); }, 300);
   },
 
   // ===== 云开发初始化 =====
@@ -268,6 +273,127 @@ App({
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   },
 
+  // ============================================================
+  // 会员系统：全局状态 + 刷新 + 拦截
+  // ============================================================
+
+  /**
+   * 刷新会员状态（静默，失败不阻塞）
+   * 调用后：
+   *   - globalData.vipStatus = { canUseCore, freeTrial, vip, _ui, ... }
+   *   - 本地存到 ls_vip_status（下次启动先显示本地再异步刷新）
+   */
+  refreshVipStatus: function () {
+    const that = this;
+    // 开关关了直接放行（本地开发调试）
+    if (CONFIG.FEATURES && CONFIG.FEATURES.ENABLE_VIP === false) {
+      const allPass = {
+        canUseCore: true, _bypass: true,
+        freeTrial: { active: true, remainingMinutes: 9999 },
+        vip: { active: true, planKey: 'bypass', isForever: true, daysLeft: Infinity },
+        _ui: { needUpgrade: false, freeAlmostGone: false, expiredVip: false }
+      };
+      that.globalData.vipStatus = allPass;
+      try { wx.setStorageSync('ls_vip_status', allPass); } catch (e) {}
+      return Promise.resolve(allPass);
+    }
+
+    // 先读本地，UI 不闪
+    try {
+      const local = wx.getStorageSync('ls_vip_status');
+      if (local && typeof local === 'object') that.globalData.vipStatus = local;
+    } catch (e) {}
+
+    return api.checkVipStatus().then((st) => {
+      if (st && typeof st === 'object') {
+        that.globalData.vipStatus = st;
+        try { wx.setStorageSync('ls_vip_status', st); } catch (e) {}
+      }
+      return st || that.globalData.vipStatus || {};
+    }).catch(() => {
+      return that.globalData.vipStatus || { canUseCore: true, _fallback: true };
+    });
+  },
+
+  /**
+   * 同步读取会员状态（优先用已缓存的）
+   */
+  getVipStatus: function () {
+    try {
+      return this.globalData.vipStatus || wx.getStorageSync('ls_vip_status') || { canUseCore: true };
+    } catch (e) {
+      return { canUseCore: true };
+    }
+  },
+
+  /**
+   * 会员拦截：在进入朗读训练、上传等核心功能前调用
+   * @param {string} from  来源页面标识，用于跳转回退
+   * @param {object} opts  { silent: false, allowRetry: true }
+   * @returns Promise<{pass: boolean, status}>  pass=true 表示可以放行
+   */
+  requireVip: function (from, opts) {
+    opts = opts || {};
+    const that = this;
+    return that.refreshVipStatus().then((st) => {
+      const status = st || {};
+      if (status.canUseCore) return { pass: true, status: status };
+
+      // 未通过 → 跳会员中心，同时带 redirect 参数（此处用全局 redirect 标记简化）
+      if (opts.silent !== true) {
+        try {
+          wx.showModal({
+            title: that._vipTitle(),
+            content: that._vipContent(status),
+            confirmText: that._vipConfirmText(status),
+            cancelText: '稍后再说',
+            confirmColor: '#2ecc71',
+            success: (res) => {
+              if (res.confirm) {
+                wx.navigateTo({
+                  url: '/pages/vip/vip?from=' + encodeURIComponent(from || '')
+                });
+              }
+            }
+          });
+        } catch (e) {
+          wx.navigateTo({ url: '/pages/vip/vip' });
+        }
+      }
+      return { pass: false, status: status };
+    });
+  },
+
+  _vipTitle: function () {
+    const lang = i18n.getLang();
+    if (lang === 'zh') return '免费体验已结束';
+    if (lang === 'en') return 'Free Trial Ended';
+    if (lang === 'ja') return '無料体験終了';
+    if (lang === 'ko') return '무료 체험 종료';
+    if (lang === 'fr') return 'Essai gratuit terminé';
+    return 'Free Trial Ended';
+  },
+  _vipContent: function (st) {
+    const lang = i18n.getLang();
+    const expired = st && st._ui && st._ui.expiredVip;
+    if (lang === 'zh') return expired ? '您的会员已过期，请续费继续使用完整功能。' : '1小时免费体验已结束，升级Pro继续训练～';
+    if (lang === 'en') return expired ? 'Your membership has expired. Renew to continue.' : 'Your 1-hour trial has ended. Upgrade to Pro!';
+    if (lang === 'ja') return expired ? '有効期限が切れました。更新して続けましょう。' : '1時間の無料体験が終了しました。Proへアップグレード！';
+    if (lang === 'ko') return expired ? '회원권이 만료되었습니다. 갱신하고 계속하세요.' : '1시간 무료 체험이 종료되었습니다. Pro로 업그레이드!';
+    if (lang === 'fr') return expired ? 'Votre abonnement a expiré. Renouvelez pour continuer.' : 'Votre essai d\'1 heure est terminé. Passez à Pro !';
+    return 'Upgrade to continue.';
+  },
+  _vipConfirmText: function (st) {
+    const lang = i18n.getLang();
+    const expired = st && st._ui && st._ui.expiredVip;
+    if (lang === 'zh') return expired ? '立即续费' : '立即开通';
+    if (lang === 'en') return expired ? 'Renew Now' : 'Upgrade Now';
+    if (lang === 'ja') return expired ? '更新する' : 'アップグレード';
+    if (lang === 'ko') return expired ? '지금 갱신' : '지금 업그레이드';
+    if (lang === 'fr') return expired ? 'Renouveler' : 'Passer à Pro';
+    return 'Upgrade';
+  },
+
   globalData: {
     // 云 & 登录
     cloudReady: false,
@@ -284,6 +410,8 @@ App({
     menuButton: null,
     // 进度
     progress: null,
+    // 会员状态
+    vipStatus: null,
     // 训练内容库
     trainingLibrary: {
       interview: {

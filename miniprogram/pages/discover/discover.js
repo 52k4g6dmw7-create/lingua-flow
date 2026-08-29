@@ -161,8 +161,23 @@ Page({
   },
 
   onCourseTap: function (e) {
+    const that = this;
     const courseId = e.currentTarget.dataset.id;
     const courseKey = e.currentTarget.dataset.key;
+    // 会员拦截：进入朗读训练
+    const block = app.requireVip();
+    if (block && block.blocked) {
+      wx.showModal({
+        title: block.title,
+        content: block.content,
+        confirmText: block.confirmText || (i18n.getLang()==='zh'?'开通会员':'Upgrade'),
+        cancelText: i18n.getLang()==='zh'?'稍后':'Later',
+        success(res){
+          if (res.confirm) wx.navigateTo({ url: '/pages/vip/vip?from=discover' });
+        }
+      });
+      return;
+    }
     // 先尝试通过 key 在 trainingLibrary 里找对应语言的例句
     const pageLang = this.data.currentLang;
     const lib = app.globalData.trainingLibrary;
@@ -193,6 +208,19 @@ Page({
   },
 
   onGoRead: function () {
+    const block = app.requireVip();
+    if (block && block.blocked) {
+      wx.showModal({
+        title: block.title,
+        content: block.content,
+        confirmText: block.confirmText || (i18n.getLang()==='zh'?'开通会员':'Upgrade'),
+        cancelText: i18n.getLang()==='zh'?'稍后':'Later',
+        success(res){
+          if (res.confirm) wx.navigateTo({ url: '/pages/vip/vip?from=discover' });
+        }
+      });
+      return;
+    }
     wx.navigateTo({ url: '/pages/read/read?plan=discover' });
   }
 });

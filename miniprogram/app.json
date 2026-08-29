@@ -4,7 +4,8 @@
     "pages/discover/discover",
     "pages/upload/upload",
     "pages/settings/settings",
-    "pages/read/read"
+    "pages/read/read",
+    "pages/vip/vip"
   ],
   "window": {
     "backgroundTextStyle": "light",
