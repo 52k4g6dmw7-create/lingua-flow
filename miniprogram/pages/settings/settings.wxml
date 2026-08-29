@@ -1,0 +1,219 @@
+<!--pages/settings/settings.wxml-->
+<view class="settings-page">
+  <!-- 页面头部 用户信息区 -->
+  <view class="header-area">
+    <view class="user-card" bindtap="{{isLoggedIn ? '' : 'onLogin'}}">
+      <view class="user-avatar">
+        <text wx:if="{{!isLoggedIn}}" class="avatar-icon">👤</text>
+        <text wx:else class="avatar-icon">{{userInfo.avatar || '👤'}}</text>
+      </view>
+      <view class="user-info">
+        <block wx:if="{{isLoggedIn}}">
+          <text class="user-name">{{userInfo.nickName || 'User'}}</text>
+          <text class="user-desc">Pro Member · {{locale.tabBar.home}} {{locale.home.day}} 17</text>
+        </block>
+        <block wx:else>
+          <text class="user-name login-text">{{locale.settings.login}}</text>
+          <text class="user-desc">{{locale.common.appDesc}}</text>
+        </block>
+      </view>
+      <view wx:if="{{!isLoggedIn}}" class="user-arrow">›</view>
+      <view wx:else class="badge">PRO</view>
+    </view>
+  </view>
+
+  <view class="settings-content">
+    <!-- 偏好设置 -->
+    <view class="settings-group">
+      <!-- 语言设置 -->
+      <view class="settings-item" bindtap="onOpenLangModal">
+        <view class="settings-left">
+          <view class="settings-icon settings-icon-green">🌐</view>
+          <view class="settings-info">
+            <view class="settings-label">{{locale.settings.language}}</view>
+            <view class="settings-desc">{{locale.settings.languageDesc}}</view>
+          </view>
+        </view>
+        <view class="settings-right">
+          <text class="settings-value lang-value">{{currentLangDisplay}}</text>
+          <text class="settings-arrow">›</text>
+        </view>
+      </view>
+
+      <!-- 每日目标 -->
+      <view class="settings-item">
+        <view class="settings-left">
+          <view class="settings-icon settings-icon-orange">🎯</view>
+          <view class="settings-info">
+            <view class="settings-label">{{locale.settings.dailyGoal}}</view>
+            <view class="settings-desc">{{locale.settings.dailyGoalDesc}}</view>
+          </view>
+        </view>
+        <view class="settings-right">
+          <slider class="goal-slider" min="5" max="120" step="5" value="{{dailyGoal}}"
+            activeColor="#2ecc71" block-size="20" bindchange="onChangeDailyGoal" style="width: 180rpx;" />
+          <text class="settings-value">{{dailyGoal}}min</text>
+        </view>
+      </view>
+
+      <!-- 通知设置 -->
+      <view class="settings-item">
+        <view class="settings-left">
+          <view class="settings-icon settings-icon-blue">🔔</view>
+          <view class="settings-info">
+            <view class="settings-label">{{locale.settings.notification}}</view>
+            <view class="settings-desc">{{locale.settings.notificationDesc}}</view>
+          </view>
+        </view>
+        <view class="settings-right">
+          <switch checked="{{notificationEnabled}}" bindchange="onToggleNotification"
+            color="#2ecc71" style="transform: scale(0.8);" />
+        </view>
+      </view>
+
+      <!-- 提醒时间 -->
+      <view wx:if="{{notificationEnabled}}" class="settings-item">
+        <view class="settings-left">
+          <view class="settings-icon settings-icon-purple">⏰</view>
+          <view class="settings-info">
+            <view class="settings-label">{{locale.settings.reminderTime}}</view>
+          </view>
+        </view>
+        <view class="settings-right">
+          <picker mode="time" value="{{reminderTime}}" bindchange="onChangeReminderTime">
+            <view class="time-picker">
+              <text class="settings-value">{{reminderTime}}</text>
+              <text class="settings-arrow">›</text>
+            </view>
+          </picker>
+        </view>
+      </view>
+
+      <!-- 主题设置 -->
+      <view class="settings-item" bindtap="onToggleTheme">
+        <view class="settings-left">
+          <view class="settings-icon settings-icon-blue">🎨</view>
+          <view class="settings-info">
+            <view class="settings-label">{{locale.settings.theme}}</view>
+            <view class="settings-desc">{{locale.settings.themeDesc}}</view>
+          </view>
+        </view>
+        <view class="settings-right">
+          <text class="settings-value">{{themeMode === 'light' ? '☀️ Light' : '🌙 Dark'}}</text>
+          <text class="settings-arrow">›</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 通用设置 -->
+    <view class="settings-group">
+      <view class="settings-item" bindtap="onAbout">
+        <view class="settings-left">
+          <view class="settings-icon settings-icon-green">ℹ️</view>
+          <view class="settings-info">
+            <view class="settings-label">{{locale.settings.about}}</view>
+            <view class="settings-desc">{{locale.settings.aboutDesc}}</view>
+          </view>
+        </view>
+        <view class="settings-right">
+          <text class="settings-value">v1.0.0</text>
+          <text class="settings-arrow">›</text>
+        </view>
+      </view>
+
+      <view class="settings-item" bindtap="onPrivacy">
+        <view class="settings-left">
+          <view class="settings-icon settings-icon-blue">🔒</view>
+          <view class="settings-info">
+            <view class="settings-label">{{locale.settings.privacy}}</view>
+          </view>
+        </view>
+        <text class="settings-arrow">›</text>
+      </view>
+
+      <view class="settings-item" bindtap="onFeedback">
+        <view class="settings-left">
+          <view class="settings-icon settings-icon-orange">💬</view>
+          <view class="settings-info">
+            <view class="settings-label">{{locale.settings.feedback}}</view>
+          </view>
+        </view>
+        <text class="settings-arrow">›</text>
+      </view>
+
+      <view class="settings-item" bindtap="onClearCache">
+        <view class="settings-left">
+          <view class="settings-icon settings-icon-red">🗑️</view>
+          <view class="settings-info">
+            <view class="settings-label">{{locale.settings.clearCache}}</view>
+          </view>
+        </view>
+        <view class="settings-right">
+          <text class="settings-value">{{cacheSize}}</text>
+          <text class="settings-arrow">›</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 退出登录 -->
+    <view wx:if="{{isLoggedIn}}" class="settings-group">
+      <view class="settings-item logout-item" bindtap="onLogout">
+        <view class="settings-left">
+          <view class="settings-icon settings-icon-red">🚪</view>
+          <view class="settings-info">
+            <view class="settings-label logout-text">{{locale.settings.logout}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 语言支持列表展示 -->
+    <view class="lang-support card">
+      <view class="card-header">
+        <view class="card-title">🌍 Supported Languages</view>
+      </view>
+      <view class="lang-tags">
+        <view class="lang-tag-item" wx:for="{{supportedLangs}}" wx:key="code">
+          <text class="lang-tag-native">{{item.native}}</text>
+          <text class="lang-tag-label">{{item.label}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view style="height: 60rpx;"></view>
+  </view>
+
+  <!-- 语言选择弹窗 -->
+  <view wx:if="{{showLangModal}}" class="modal-mask" bindtap="onCloseLangModal">
+    <view class="modal-content" catchtap="noop">
+      <view class="modal-header">
+        <text class="modal-title">{{locale.settings.selectLang}}</text>
+        <view class="modal-close" bindtap="onCloseLangModal">✕</view>
+      </view>
+      <view class="modal-body">
+        <view class="lang-option" wx:for="{{supportedLangs}}" wx:key="code"
+          bindtap="onSelectLang" data-code="{{item.code}}">
+          <view class="lang-info">
+            <view class="lang-flag {{item.code === currentLang ? 'active' : ''}}">
+              <text wx:if="{{item.code === 'zh'}}">🇨🇳</text>
+              <text wx:elif="{{item.code === 'en'}}">🇺🇸</text>
+              <text wx:elif="{{item.code === 'ja'}}">🇯🇵</text>
+              <text wx:elif="{{item.code === 'ko'}}">🇰🇷</text>
+              <text wx:elif="{{item.code === 'fr'}}">🇫🇷</text>
+            </view>
+            <view class="lang-text">
+              <text class="lang-native">{{item.native}}</text>
+              <text class="lang-label">{{item.label}}</text>
+            </view>
+          </view>
+          <view wx:if="{{item.code === currentLang}}" class="lang-check">✓</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 浮动快速朗读按钮 -->
+  <view class="fab-mic" bindtap="onGoRead">
+    <text class="fab-icon">🎙</text>
+  </view>
+</view>

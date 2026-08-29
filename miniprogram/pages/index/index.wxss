@@ -1,0 +1,469 @@
+/* pages/index/index.wxss */
+
+.index-page {
+  min-height: 100vh;
+  background-color: var(--bg-page);
+  position: relative;
+  padding-bottom: 180rpx;
+}
+
+/* ===== 自定义导航栏 ===== */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background-color: var(--bg-page);
+}
+
+.navbar-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24rpx;
+  position: relative;
+}
+
+.nav-btn {
+  width: 72rpx;
+  height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+}
+
+.menu-icon {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.menu-line {
+  width: 32rpx;
+  height: 3rpx;
+  background-color: var(--text-primary);
+  border-radius: 2rpx;
+}
+
+/* AI计划按钮 */
+.ai-plan-btn {
+  display: flex;
+  align-items: center;
+  background-color: #ffffff;
+  border-radius: 40rpx;
+  padding: 14rpx 28rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
+  border: 2rpx solid var(--primary-color);
+}
+
+.ai-icon {
+  font-size: 28rpx;
+  margin-right: 10rpx;
+}
+
+.ai-text {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.ai-arrow {
+  margin-left: 8rpx;
+  font-size: 22rpx;
+  color: var(--text-secondary);
+}
+
+/* 右侧按钮 */
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.guide-btn {
+  display: flex;
+  align-items: center;
+  padding: 10rpx 18rpx;
+  background-color: rgba(255, 255, 255, 0.85);
+  border-radius: 32rpx;
+}
+
+.guide-icon {
+  font-size: 26rpx;
+  margin-right: 6rpx;
+}
+
+.guide-text {
+  font-size: 24rpx;
+  color: var(--text-secondary);
+}
+
+.lang-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 64rpx;
+  height: 64rpx;
+  padding: 0 16rpx;
+  background-color: var(--primary-color);
+  border-radius: 50%;
+  box-shadow: 0 4rpx 12rpx rgba(46, 204, 113, 0.3);
+}
+
+.lang-badge .lang-text {
+  color: #ffffff;
+  font-size: 22rpx;
+  font-weight: 700;
+  letter-spacing: 0.5rpx;
+}
+
+/* ===== 页面内容 ===== */
+.page-content {
+  padding-top: 240rpx;
+  padding-left: 32rpx;
+  padding-right: 32rpx;
+}
+
+/* ===== 添加到桌面横幅 ===== */
+.add-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #ffffff;
+  border-radius: 20rpx;
+  padding: 20rpx 24rpx;
+  margin-bottom: 32rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+}
+
+.banner-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.banner-icon {
+  font-size: 36rpx;
+  margin-right: 14rpx;
+}
+
+.banner-text {
+  font-size: 26rpx;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.banner-right {
+  display: flex;
+  align-items: center;
+}
+
+.banner-btn {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  color: #ffffff;
+  font-size: 26rpx;
+  font-weight: 500;
+  padding: 14rpx 28rpx;
+  border-radius: 30rpx;
+  margin-right: 16rpx;
+  white-space: nowrap;
+}
+
+.banner-close {
+  width: 48rpx;
+  height: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-hint);
+  font-size: 26rpx;
+}
+
+/* ===== 大数字进度区 ===== */
+.progress-hero {
+  padding: 24rpx 0 40rpx;
+  text-align: center;
+}
+
+.big-number {
+  display: inline-block;
+  margin-bottom: 16rpx;
+}
+
+.number-text {
+  font-size: 180rpx;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--primary-color) 0%, #f39c12 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+  letter-spacing: -4rpx;
+}
+
+/* 进度曲线 */
+.progress-curve {
+  position: relative;
+  height: 80rpx;
+  margin: 0 60rpx 32rpx;
+  display: flex;
+  align-items: flex-end;
+}
+
+.curve-line-bg {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4rpx;
+  background-color: var(--border-color);
+  border-radius: 2rpx;
+}
+
+.curve-line {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 80rpx;
+}
+
+.curve-fill {
+  position: absolute;
+  left: 12rpx;
+  right: 12rpx;
+  bottom: 0;
+  height: 4rpx;
+  background: linear-gradient(90deg, var(--primary-color), var(--primary-dark));
+  border-radius: 2rpx;
+  /* 右侧有上升曲线 */
+  clip-path: polygon(0% 100%, 75% 100%, 75% 0%, 100% 0%, 100% 100%);
+}
+
+.curve-dot {
+  position: absolute;
+  width: 24rpx;
+  height: 24rpx;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+  z-index: 3;
+}
+
+.curve-dot.start {
+  left: 0;
+  bottom: -10rpx;
+}
+
+.curve-dot.end {
+  right: 0;
+  top: 0;
+  width: 20rpx;
+  height: 20rpx;
+  background-color: var(--primary-dark);
+  box-shadow: 0 0 0 6rpx var(--primary-light);
+}
+
+/* 统计信息行 */
+.stats-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16rpx 32rpx;
+  background-color: #ffffff;
+  border-radius: 20rpx;
+  margin: 0 24rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+}
+
+.stat-item {
+  display: flex;
+  align-items: baseline;
+  padding: 0 16rpx;
+}
+
+.stat-label {
+  font-size: 24rpx;
+  color: var(--text-hint);
+  margin-right: 8rpx;
+}
+
+.stat-value {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.stat-value.highlight {
+  color: var(--primary-color);
+  font-size: 36rpx;
+}
+
+.stat-unit {
+  font-size: 22rpx;
+  color: var(--text-hint);
+  margin-left: 6rpx;
+}
+
+.stat-divider {
+  color: var(--border-color);
+  font-size: 28rpx;
+  font-weight: 300;
+}
+
+.stat-arrow {
+  margin-left: 12rpx;
+  color: var(--text-hint);
+  font-size: 36rpx;
+  line-height: 1;
+}
+
+/* ===== 卡片通用样式 ===== */
+.card {
+  background-color: #ffffff;
+  border-radius: 24rpx;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20rpx;
+}
+
+.plan-label {
+  font-size: 26rpx;
+  color: var(--text-hint);
+  font-weight: 500;
+}
+
+.plan-toggle {
+  display: flex;
+  align-items: center;
+  padding: 4rpx 12rpx;
+}
+
+.plan-arrow {
+  font-size: 28rpx;
+  color: var(--text-hint);
+}
+
+/* ===== 训练计划卡片 ===== */
+.plan-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.plan-title {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8rpx;
+}
+
+.plan-meta {
+  display: flex;
+  align-items: center;
+  margin-top: 12rpx;
+}
+
+.meta-week,
+.meta-day {
+  font-size: 26rpx;
+  color: var(--text-secondary);
+}
+
+.meta-sep {
+  margin: 0 12rpx;
+  color: var(--text-hint);
+}
+
+/* ===== 正在掌握卡片 ===== */
+.mastering-list {
+  display: flex;
+  flex-direction: column;
+  gap: 28rpx;
+}
+
+.mastering-item {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.mastering-item.empty {
+  gap: 16rpx;
+}
+
+.mastering-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mastering-name {
+  font-size: 30rpx;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.mastering-status {
+  font-size: 24rpx;
+  color: var(--text-hint);
+}
+
+.progress-bar {
+  width: 100%;
+  height: 12rpx;
+  background-color: var(--primary-light);
+  border-radius: 6rpx;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-color), var(--primary-dark));
+  border-radius: 6rpx;
+  transition: width 0.4s ease;
+}
+
+/* ===== 底部开始按钮 ===== */
+.bottom-action {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 24rpx 32rpx calc(24rpx + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(247, 248, 250, 0) 0%, var(--bg-page) 30%);
+  z-index: 99;
+}
+
+.start-btn {
+  width: 100%;
+  min-height: 108rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
+  font-size: 36rpx;
+  font-weight: 600;
+  border-radius: 54rpx;
+  background: linear-gradient(135deg, #b8e9cf 0%, #7ed6a3 50%, var(--primary-color) 100%);
+  color: #0f5132;
+  box-shadow: 0 12rpx 32rpx rgba(46, 204, 113, 0.3);
+  border: none;
+}
+
+.start-btn::after {
+  border: none;
+}
+
+.start-icon {
+  font-size: 40rpx;
+}

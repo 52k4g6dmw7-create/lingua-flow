@@ -1,0 +1,143 @@
+<!--pages/upload/upload.wxml-->
+<view class="upload-page">
+  <scroll-view scroll-y class="page-scroll">
+    <!-- 顶部介绍 -->
+    <view class="header-banner">
+      <view class="banner-content">
+        <text class="banner-icon">📝</text>
+        <view class="banner-text">
+          <text class="banner-title">{{locale.upload.title}}</text>
+          <text class="banner-sub">{{locale.upload.subtitle}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 目标语言选择 -->
+    <view class="target-lang-section">
+      <view class="section-label">🎯 Practice Language</view>
+      <view class="lang-chips">
+        <view class="lang-chip-small {{targetLang === item.code ? 'active' : ''}}"
+          wx:for="{{targetLangs}}" wx:key="code"
+          bindtap="onSelectTargetLang" data-code="{{item.code}}">
+          <text>{{item.flag}} {{item.native}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 文本输入区 -->
+    <view class="card-section">
+      <view class="section-header">
+        <text class="section-title">✍️ {{locale.upload.pasteText}}</text>
+        <view class="action-btns">
+          <view class="action-btn" bindtap="onPasteText">📋 Paste</view>
+          <view wx:if="{{textLength > 0}}" class="action-btn action-btn-danger" bindtap="onClearText">🗑️ Clear</view>
+        </view>
+      </view>
+
+      <view class="textarea-wrap">
+        <textarea class="text-input"
+          placeholder="{{locale.upload.textPlaceholder}}"
+          placeholder-class="ph-style"
+          maxlength="{{maxLength}}"
+          auto-height
+          value="{{inputText}}"
+          bindinput="onTextInput" />
+      </view>
+
+      <view class="char-counter">
+        <text class="count-text">{{locale.upload.currentLength}}: <text class="count-num">{{textLength}}</text></text>
+        <text class="count-max"> / {{locale.upload.maxLength}} {{maxLength}}</text>
+      </view>
+    </view>
+
+    <!-- 分割线 -->
+    <view class="divider-or">
+      <view class="div-line"></view>
+      <text class="div-text">OR</text>
+      <view class="div-line"></view>
+    </view>
+
+    <!-- 文件上传区 -->
+    <view class="card-section">
+      <view class="section-header">
+        <text class="section-title">📁 {{locale.upload.selectFile}}</text>
+        <text class="support-tip">{{locale.upload.supportTypes}}</text>
+      </view>
+
+      <block wx:if="{{!selectedFile}}">
+        <view class="file-drop-zone" bindtap="onSelectFile">
+          <view class="drop-icon">⬆️</view>
+          <text class="drop-text">Tap to select file</text>
+          <text class="drop-sub">.txt · .docx · .pdf supported</text>
+        </view>
+      </block>
+
+      <block wx:else>
+        <view class="selected-file-card">
+          <view class="file-icon-box">📄</view>
+          <view class="file-info">
+            <text class="file-name">{{selectedFile.name}}</text>
+            <text class="file-size">{{selectedFile.size}}</text>
+          </view>
+          <view class="file-remove" catchtap="onRemoveFile">✕</view>
+        </view>
+      </block>
+    </view>
+
+    <!-- 提交按钮 -->
+    <view class="submit-section">
+      <button class="btn btn-primary btn-large btn-block submit-btn" bindtap="onStartTraining">
+        <text class="btn-icon">🚀</text>
+        {{locale.upload.uploadBtn}}
+      </button>
+    </view>
+
+    <!-- 上传历史 -->
+    <view class="history-section">
+      <view class="section-header">
+        <text class="section-title">📚 {{locale.upload.history}}</text>
+        <view wx:if="{{history.length > 0}}" class="action-btn action-btn-danger" bindtap="onClearHistory">
+          {{locale.upload.clearHistory}}
+        </view>
+      </view>
+
+      <view wx:if="{{history.length === 0}}" class="empty-history">
+        <text class="empty-icon">📭</text>
+        <text class="empty-text">{{locale.common.noData}}</text>
+      </view>
+
+      <view wx:else class="history-list">
+        <view class="history-item" wx:for="{{history}}" wx:key="id">
+          <view class="history-left" bindtap="onUseHistory" data-id="{{item.id}}">
+            <view class="history-type">
+              <text wx:if="{{item.type === 'file'}}">📄</text>
+              <text wx:else>📝</text>
+            </view>
+            <view class="history-info">
+              <text class="history-content">{{item.content}}</text>
+              <view class="history-meta">
+                <view class="lang-badge-sm">
+                  <block wx:for="{{targetLangs}}" wx:for-item="l" wx:key="code">
+                    <text wx:if="{{l.code === item.targetLang}}">{{l.flag}}</text>
+                  </block>
+                </view>
+                <text class="history-time">{{item.time}}</text>
+              </view>
+            </view>
+          </view>
+          <view class="history-actions">
+            <view class="use-btn" catchtap="onUseHistory" data-id="{{item.id}}">Use</view>
+            <view class="delete-btn" catchtap="onDeleteHistory" data-id="{{item.id}}">✕</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view style="height: 120rpx;"></view>
+  </scroll-view>
+
+  <!-- 浮动快速朗读按钮 -->
+  <view class="fab-mic" bindtap="onGoRead">
+    <text class="fab-icon">🎙</text>
+  </view>
+</view>

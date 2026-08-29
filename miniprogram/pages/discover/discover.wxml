@@ -1,0 +1,143 @@
+<!--pages/discover/discover.wxml-->
+<view class="discover-page">
+  <!-- 搜索栏 -->
+  <view class="search-bar">
+    <view class="search-input-wrap">
+      <text class="search-icon">🔍</text>
+      <input class="search-input" placeholder="Search courses, topics..."
+        value="{{searchKeyword}}"
+        bindinput="onSearchInput"
+        bindconfirm="onSearchConfirm"
+        confirm-type="search" />
+    </view>
+  </view>
+
+  <scroll-view scroll-y class="page-scroll" enable-flex>
+    <!-- Banner 轮播 -->
+    <view class="banner-section">
+      <swiper class="banner-swiper" indicator-dots autoplay circular
+        indicator-color="rgba(255,255,255,0.4)"
+        indicator-active-color="#ffffff"
+        interval="3500" duration="500">
+        <swiper-item wx:for="{{banners}}" wx:key="id" bindtap="onBannerTap" data-id="{{item.id}}">
+          <view class="banner-card" style="background: {{item.gradient}};">
+            <view class="banner-text">
+              <view class="banner-title">{{item.title}}</view>
+              <view class="banner-subtitle">{{item.subtitle}}</view>
+              <view class="banner-btn-small">Learn More →</view>
+            </view>
+            <view class="banner-icon">{{item.icon}}</view>
+          </view>
+        </swiper-item>
+      </swiper>
+    </view>
+
+    <!-- 分类导航 -->
+    <view class="category-section">
+      <scroll-view scroll-x class="category-scroll" show-scrollbar="{{false}}">
+        <view class="category-scroll-inner">
+          <view class="category-item {{activeCategory === item.key ? 'active' : ''}}"
+            wx:for="{{categories}}" wx:key="key"
+            bindtap="onSelectCategory" data-key="{{item.key}}">
+            <view class="cat-icon">{{item.icon}}</view>
+            <view class="cat-label">{{item.label}}</view>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+
+    <!-- 为你推荐 -->
+    <view class="section">
+      <view class="section-header">
+        <text class="section-title">💡 {{locale.discover.recommended}}</text>
+        <text class="section-more">See All ›</text>
+      </view>
+      <scroll-view scroll-x class="course-scroll" show-scrollbar="{{false}}">
+        <view class="course-scroll-inner">
+          <view class="course-card" wx:for="{{recommendedCourses}}" wx:key="id"
+            bindtap="onCourseTap" data-id="{{item.id}}">
+            <view class="course-cover" style="background: linear-gradient(135deg, {{item.color}}, {{item.color}}88);">
+              <text class="cover-emoji">📚</text>
+              <view class="diff-tag">{{item.difficultyLabel}}</view>
+            </view>
+            <view class="course-info">
+              <text class="course-name">{{item.name}}</text>
+              <view class="course-meta">
+                <text>📖 {{item.lessons}} {{locale.discover.lessons}}</text>
+                <text>⏱ {{item.duration}}</text>
+              </view>
+              <view class="course-footer">
+                <text class="students">👥 {{item.students}} {{locale.discover.students}}</text>
+                <view class="enroll-btn" catchtap="onEnroll" data-name="{{item.name}}">
+                  {{locale.discover.enroll}}
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+
+    <!-- 热门课程 -->
+    <view class="section">
+      <view class="section-header">
+        <text class="section-title">🔥 {{locale.discover.hot}}</text>
+        <text class="section-more">See All ›</text>
+      </view>
+      <view class="list-courses">
+        <view class="list-course-item" wx:for="{{hotCourses}}" wx:key="id"
+          bindtap="onCourseTap" data-id="{{item.id}}">
+          <view class="list-cover" style="background: linear-gradient(135deg, {{item.color}}, {{item.color}}88);">
+            <text class="list-emoji">📘</text>
+            <view wx:if="{{item.hot}}" class="hot-badge">🔥 HOT</view>
+          </view>
+          <view class="list-info">
+            <text class="list-name">{{item.name}}</text>
+            <view class="list-tags">
+              <view class="diff-tag-sm">{{item.difficultyLabel}}</view>
+              <text class="list-meta">{{item.lessons}} {{locale.discover.lessons}} · {{item.duration}}</text>
+            </view>
+            <view class="list-bottom">
+              <text class="list-students">👥 {{item.students}}</text>
+              <view class="enroll-btn-sm" catchtap="onEnroll" data-name="{{item.name}}">
+                {{locale.discover.enroll}}
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 最新上架 -->
+    <view class="section">
+      <view class="section-header">
+        <text class="section-title">✨ {{locale.discover.newArrival}}</text>
+        <text class="section-more">See All ›</text>
+      </view>
+      <view class="grid-courses">
+        <view class="grid-course-item" wx:for="{{newCourses}}" wx:key="id"
+          bindtap="onCourseTap" data-id="{{item.id}}">
+          <view class="grid-cover" style="background: linear-gradient(135deg, {{item.color}}, {{item.color}}88);">
+            <text class="grid-emoji">📙</text>
+            <view wx:if="{{item.isNew}}" class="new-ribbon">NEW</view>
+          </view>
+          <view class="grid-info">
+            <text class="grid-name">{{item.name}}</text>
+            <view class="grid-meta">
+              <text class="diff-mini">{{item.difficultyLabel}}</text>
+              <text>·</text>
+              <text>{{item.lessons}} {{locale.discover.lessons}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view style="height: 120rpx;"></view>
+  </scroll-view>
+
+  <!-- 浮动快速朗读按钮 -->
+  <view class="fab-mic" bindtap="onGoRead">
+    <text class="fab-icon">🎙</text>
+  </view>
+</view>

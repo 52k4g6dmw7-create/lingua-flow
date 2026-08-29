@@ -1,0 +1,151 @@
+<!--pages/index/index.wxml-->
+<view class="index-page">
+  <!-- 自定义导航栏 -->
+  <view class="navbar" style="padding-top: {{statusBarHeight}}px; height: calc({{statusBarHeight}}px + {{navBarHeight}}px);">
+    <view class="navbar-content" style="height: {{navBarHeight}}px;">
+      <!-- 左侧菜单 -->
+      <view class="nav-btn" bindtap="onMenu">
+        <view class="menu-icon">
+          <view class="menu-line"></view>
+          <view class="menu-line"></view>
+          <view class="menu-line"></view>
+        </view>
+      </view>
+
+      <!-- 中间 AI帮我安排 -->
+      <view class="ai-plan-btn" bindtap="onAIPlan">
+        <view class="ai-icon">🤖</view>
+        <text class="ai-text">{{locale.home.aiPlan}}</text>
+        <view class="ai-arrow">▾</view>
+      </view>
+
+      <!-- 右侧 使用指南 + 语言切换 -->
+      <view class="nav-right">
+        <view class="guide-btn" bindtap="onGuide">
+          <text class="guide-icon">📘</text>
+          <text class="guide-text">{{locale.home.guide}}</text>
+        </view>
+        <view class="lang-badge" bindtap="onQuickLang">
+          <text class="lang-text">{{currentLang.toUpperCase()}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 页面主内容 -->
+  <view class="page-content">
+    <!-- 添加到桌面横幅 -->
+    <view wx:if="{{showBanner}}" class="add-banner">
+      <view class="banner-left">
+        <text class="banner-icon">📱</text>
+        <text class="banner-text">{{locale.home.addToDesktop}}</text>
+      </view>
+      <view class="banner-right">
+        <view class="banner-btn" bindtap="onAddToDesktop" catchtap="onAddToDesktop">
+          {{locale.home.addNow}}
+        </view>
+        <view class="banner-close" bindtap="onCloseBanner" catchtap="onCloseBanner">
+          <text>✕</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 大数字进度展示区 -->
+    <view class="progress-hero">
+      <!-- 大数字 -->
+      <view class="big-number">
+        <text class="number-text">{{consecutiveDays}}</text>
+      </view>
+
+      <!-- 进度曲线 -->
+      <view class="progress-curve">
+        <view class="curve-line">
+          <view class="curve-dot start"></view>
+          <view class="curve-fill"></view>
+          <view class="curve-dot end"></view>
+        </view>
+        <view class="curve-line-bg"></view>
+      </view>
+
+      <!-- 统计信息 -->
+      <view class="stats-row" bindtap="onViewStats">
+        <view class="stat-item">
+          <text class="stat-label">{{locale.home.consecutiveDays}}</text>
+          <text class="stat-value highlight">{{consecutiveDays}}</text>
+          <text class="stat-unit">{{locale.home.day}}</text>
+        </view>
+        <view class="stat-divider">|</view>
+        <view class="stat-item">
+          <text class="stat-label">{{locale.home.totalDays}}</text>
+          <text class="stat-value">{{totalDays}}</text>
+          <text class="stat-unit">{{locale.home.day}}</text>
+        </view>
+        <view class="stat-divider">|</view>
+        <view class="stat-item">
+          <text class="stat-label">{{locale.home.totalHours}}</text>
+          <text class="stat-value">{{totalMinutes}}.1</text>
+          <text class="stat-unit">h</text>
+        </view>
+        <view class="stat-arrow">›</view>
+      </view>
+    </view>
+
+    <!-- 训练计划卡片 -->
+    <view class="card training-card">
+      <view class="card-header" bindtap="onTogglePlan">
+        <view class="plan-label">{{locale.home.trainingPlan}}</view>
+        <view class="plan-toggle">
+          <text class="plan-arrow">▾</text>
+        </view>
+      </view>
+      <view class="plan-content">
+        <view class="plan-title">{{currentPlanName || locale.home.interviewIntro}}</view>
+        <view class="plan-meta">
+          <text class="meta-week">{{locale.home.week}}{{currentWeek}}{{locale.home.weekLabel}}</text>
+          <text class="meta-sep">·</text>
+          <text class="meta-day">{{locale.home.currentDay}}{{currentDayOfWeek}}{{locale.home.currentDayLabel}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 正在掌握卡片 -->
+    <view class="card mastering-card">
+      <view class="card-header">
+        <view class="plan-label">{{locale.home.mastering}}</view>
+      </view>
+      <view class="mastering-list">
+        <block wx:for="{{masteringSkills}}" wx:key="id">
+          <view class="mastering-item">
+            <view class="mastering-info">
+              <text class="mastering-name">{{item.name}}</text>
+              <text class="mastering-status">{{item.statusText}}</text>
+            </view>
+            <view class="mastering-progress">
+              <view class="progress-bar">
+                <view class="progress-fill" style="width: {{item.progress}}%;"></view>
+              </view>
+            </view>
+          </view>
+        </block>
+        <view wx:if="{{masteringSkills.length === 0}}" class="mastering-item empty">
+          <text class="mastering-name">{{locale.home.conclusionFirst}}</text>
+          <text class="mastering-status">{{locale.home.progressStart}}</text>
+          <view class="progress-bar">
+            <view class="progress-fill" style="width: 15%;"></view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 占位 -->
+    <view style="height: 200rpx;"></view>
+  </view>
+
+  <!-- 底部大按钮 -->
+  <view class="bottom-action">
+    <button class="btn btn-primary btn-large btn-block start-btn" bindtap="onStartRead">
+      <text class="start-icon">🎙</text>
+      <text>{{locale.home.startRead}} · {{locale.home.currentDay}}1{{locale.home.currentDayLabel}}</text>
+    </button>
+  </view>
+</view>

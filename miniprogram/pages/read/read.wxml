@@ -1,0 +1,174 @@
+<!--pages/read/read.wxml-->
+<view class="read-page">
+  <!-- 自定义导航栏 -->
+  <view class="read-navbar" style="padding-top: {{statusBarHeight}}px;">
+    <view class="read-navbar-content">
+      <view class="nav-back" bindtap="onBack">
+        <text>‹</text>
+      </view>
+      <view class="nav-title">
+        <text class="title-text">{{locale.read.title}}</text>
+        <view class="status-pill status-{{status}}">
+          <text class="status-dot"></text>
+          <text>{{statusText}}</text>
+        </view>
+      </view>
+      <view class="nav-home" bindtap="onGoHome">
+        <text>🏠</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="read-content">
+    <!-- 内容语言选择 -->
+    <view class="content-lang-bar">
+      <view class="lang-label">🎯 Content Language:</view>
+      <scroll-view scroll-x class="lang-scroll" show-scrollbar="{{false}}">
+        <view class="lang-scroll-inner">
+          <view class="lang-chip {{contentLang === item.code ? 'active' : ''}}"
+            wx:for="{{contentLangs}}" wx:key="code"
+            bindtap="onChangeContentLang" data-code="{{item.code}}">
+            <text class="chip-flag">{{item.flag}}</text>
+            <text class="chip-text">{{item.native}}</text>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+
+    <!-- 句子进度 -->
+    <view class="sentence-progress">
+      <text class="progress-text">{{currentSentenceIndex + 1}} / {{sentences.length}}</text>
+      <view class="progress-dots">
+        <block wx:for="{{sentences}}" wx:key="index">
+          <view class="p-dot {{index < currentSentenceIndex ? 'done' : ''}} {{index === currentSentenceIndex ? 'current' : ''}}"></view>
+        </block>
+      </view>
+    </view>
+
+    <!-- 朗读内容卡片 -->
+    <view class="sentence-card">
+      <view class="sentence-number">Sentence {{currentSentenceIndex + 1}}</view>
+      <view class="sentence-text">
+        <text>{{currentSentence}}</text>
+      </view>
+    </view>
+
+    <!-- 录音计时显示 -->
+    <view wx:if="{{status === 'recording' || status === 'analyzing' || status === 'complete'}}" class="timer-card">
+      <view class="timer-display">
+        <text class="timer-icon">⏱️</text>
+        <text class="timer-text">{{recordTimeDisplay}}</text>
+      </view>
+      <!-- 波形动画 -->
+      <view wx:if="{{waveAnimation}}" class="wave-container">
+        <view class="wave-bar" style="animation-delay: 0s;"></view>
+        <view class="wave-bar" style="animation-delay: 0.1s;"></view>
+        <view class="wave-bar" style="animation-delay: 0.2s;"></view>
+        <view class="wave-bar" style="animation-delay: 0.3s;"></view>
+        <view class="wave-bar" style="animation-delay: 0.4s;"></view>
+        <view class="wave-bar" style="animation-delay: 0.3s;"></view>
+        <view class="wave-bar" style="animation-delay: 0.2s;"></view>
+        <view class="wave-bar" style="animation-delay: 0.1s;"></view>
+        <view class="wave-bar" style="animation-delay: 0s;"></view>
+      </view>
+    </view>
+
+    <!-- 分析结果卡片 -->
+    <view wx:if="{{status === 'complete' && result}}" class="result-card">
+      <view class="result-header">
+        <text class="result-title">🎉 {{locale.read.pronunciation}}</text>
+        <view class="total-score">
+          <text class="score-num">{{result.pronunciation}}</text>
+          <text class="score-unit">/100</text>
+        </view>
+      </view>
+      <view class="result-scores">
+        <view class="score-item">
+          <view class="score-label">{{locale.read.accuracy}}</view>
+          <view class="score-bar">
+            <view class="score-fill score-fill-acc" style="width: {{result.accuracy}}%;"></view>
+          </view>
+          <view class="score-value">{{result.accuracy}}</view>
+        </view>
+        <view class="score-item">
+          <view class="score-label">{{locale.read.fluency}}</view>
+          <view class="score-bar">
+            <view class="score-fill score-fill-flu" style="width: {{result.fluency}}%;"></view>
+          </view>
+          <view class="score-value">{{result.fluency}}</view>
+        </view>
+      </view>
+      <view class="suggestion-box">
+        <text class="suggestion-title">💡 {{locale.read.suggestion}}</text>
+        <text class="suggestion-text">{{result.suggestion}}</text>
+      </view>
+    </view>
+
+    <!-- 提示信息 -->
+    <view wx:if="{{status === 'prepare'}}" class="tips-card">
+      <view class="tip-item">
+        <text class="tip-bullet">1</text>
+        <text>{{locale.read.tip1}}</text>
+      </view>
+      <view class="tip-item">
+        <text class="tip-bullet">2</text>
+        <text>{{locale.read.tip2}}</text>
+      </view>
+      <view class="tip-item">
+        <text class="tip-bullet">3</text>
+        <text>{{locale.read.tip3}}</text>
+      </view>
+    </view>
+
+    <view style="height: 280rpx;"></view>
+  </view>
+
+  <!-- 底部操作区 -->
+  <view class="bottom-action">
+    <!-- 句子切换按钮 -->
+    <view class="sentence-nav">
+      <view class="nav-btn-small" bindtap="onPrevSentence">
+        <text>‹ {{locale.read.prevSentence}}</text>
+      </view>
+      <view class="nav-btn-small" bindtap="onNextSentence">
+        <text>{{locale.read.nextSentence}} ›</text>
+      </view>
+    </view>
+
+    <!-- 录音主按钮 -->
+    <view class="main-action">
+      <block wx:if="{{status === 'prepare'}}">
+        <button class="record-btn record-btn-start" bindtap="onStartRecord">
+          <view class="record-icon">🎙️</view>
+          <text>{{locale.read.startRecord}}</text>
+        </button>
+      </block>
+      <block wx:elif="{{status === 'recording'}}">
+        <button class="record-btn record-btn-stop" bindtap="onStopRecord">
+          <view class="record-icon pulse">●</view>
+          <text>{{locale.read.stopRecord}}</text>
+        </button>
+      </block>
+      <block wx:elif="{{status === 'analyzing'}}">
+        <view class="record-btn record-btn-analyzing" disabled>
+          <view class="loading-spinner"></view>
+          <text>Analyzing...</text>
+        </view>
+      </block>
+      <block wx:elif="{{status === 'complete'}}">
+        <view class="complete-actions">
+          <button class="btn btn-outline replay-btn" bindtap="onReplayRecord">
+            🔊 {{locale.read.replay}}
+          </button>
+          <button wx:if="{{currentSentenceIndex < sentences.length - 1}}"
+            class="btn btn-primary next-btn" bindtap="onNextSentence">
+            {{locale.read.nextSentence}} →
+          </button>
+          <button wx:else class="btn btn-primary next-btn" bindtap="onFinishAll">
+            🎉 完成全部
+          </button>
+        </view>
+      </block>
+    </view>
+  </view>
+</view>
