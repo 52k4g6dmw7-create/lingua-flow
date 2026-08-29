@@ -2,30 +2,90 @@
 <view class="settings-page">
   <!-- 页面头部 用户信息区 -->
   <view class="header-area">
-    <view class="user-card" bindtap="{{isLoggedIn ? '' : 'onLogin'}}">
+    <view class="user-card" bindtap="onTapUserCard">
       <view class="user-avatar">
-        <text wx:if="{{!isLoggedIn}}" class="avatar-icon">👤</text>
-        <text wx:else class="avatar-icon">{{userInfo.avatar || '👤'}}</text>
+        <block wx:if="{{isLoggedIn && userInfo.avatarUrl}}">
+          <image src="{{userInfo.avatarUrl}}" class="avatar-img" mode="aspectFill" />
+        </block>
+        <block wx:elif="{{isLoggedIn}}">
+          <text class="avatar-icon">😊</text>
+        </block>
+        <block wx:else>
+          <text class="avatar-icon">👤</text>
+        </block>
       </view>
       <view class="user-info">
         <block wx:if="{{isLoggedIn}}">
-          <text class="user-name">{{userInfo.nickName || 'User'}}</text>
-          <text class="user-desc">Pro Member · {{locale.tabBar.home}} {{locale.home.day}} 17</text>
+          <text class="user-name">{{userInfo.nickName || 'LinguaSpeak 用户'}}</text>
+          <view class="user-desc-wrap">
+            <text class="user-desc">
+              {{locale.settings.proTip}}
+            </text>
+            <text wx:if="{{userInfo.phone}}" class="user-desc phone-tag">📱 {{userInfo.phone}}</text>
+          </view>
         </block>
         <block wx:else>
-          <text class="user-name login-text">{{locale.settings.login}}</text>
+          <text class="user-name login-text">{{locale.settings.login}} / {{locale.settings.register}}</text>
           <text class="user-desc">{{locale.common.appDesc}}</text>
         </block>
       </view>
       <view wx:if="{{!isLoggedIn}}" class="user-arrow">›</view>
-      <view wx:else class="badge">PRO</view>
+      <view wx:elif="{{cloudReady}}" class="badge">ONLINE</view>
+      <view wx:else class="badge badge-local">LOCAL</view>
     </view>
   </view>
 
   <view class="settings-content">
+    <!-- 账号安全组（登录后才显示） -->
+    <view wx:if="{{isLoggedIn}}" class="settings-group">
+      <view class="settings-item" bindtap="onTapUserCard">
+        <view class="settings-left">
+          <view class="settings-icon settings-icon-green">✏️</view>
+          <view class="settings-info">
+            <view class="settings-label">{{locale.settings.editProfile}}</view>
+            <view class="settings-desc">{{locale.settings.editProfileDesc}}</view>
+          </view>
+        </view>
+        <view class="settings-right"><text class="settings-arrow">›</text></view>
+      </view>
+
+      <view wx:if="{{enablePhoneAuth}}" class="settings-item">
+        <view class="settings-left">
+          <view class="settings-icon settings-icon-blue">📱</view>
+          <view class="settings-info">
+            <view class="settings-label">{{locale.settings.phoneAuth}}</view>
+            <view class="settings-desc">
+              {{userInfo.phone ? (locale.settings.phoneBound + ': ' + userInfo.phone) : locale.settings.phoneAuthDesc}}
+            </view>
+          </view>
+        </view>
+        <view class="settings-right">
+          <button wx:if="{{!userInfo.phone}}"
+            class="phone-btn"
+            open-type="getPhoneNumber"
+            bindgetphonenumber="onGetPhone">
+            {{locale.settings.bindPhone}}
+          </button>
+          <text wx:else class="settings-value green-text">✓</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 未配置云环境提醒 -->
+    <view wx:if="{{!cloudReady}}" class="settings-group alert-group">
+      <view class="settings-item">
+        <view class="settings-left">
+          <view class="settings-icon settings-icon-orange">⚠️</view>
+          <view class="settings-info">
+            <view class="settings-label">尚未配置云环境</view>
+            <view class="settings-desc">请在 config.js 填写 CLOUD_ENV 以启用真实登录、云同步等功能。详细步骤见 DEPLOY_CHECKLIST.md。</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
     <!-- 偏好设置 -->
     <view class="settings-group">
-      <!-- 语言设置 -->
       <view class="settings-item" bindtap="onOpenLangModal">
         <view class="settings-left">
           <view class="settings-icon settings-icon-green">🌐</view>
@@ -40,7 +100,6 @@
         </view>
       </view>
 
-      <!-- 每日目标 -->
       <view class="settings-item">
         <view class="settings-left">
           <view class="settings-icon settings-icon-orange">🎯</view>
@@ -56,7 +115,6 @@
         </view>
       </view>
 
-      <!-- 通知设置 -->
       <view class="settings-item">
         <view class="settings-left">
           <view class="settings-icon settings-icon-blue">🔔</view>
@@ -71,7 +129,6 @@
         </view>
       </view>
 
-      <!-- 提醒时间 -->
       <view wx:if="{{notificationEnabled}}" class="settings-item">
         <view class="settings-left">
           <view class="settings-icon settings-icon-purple">⏰</view>
@@ -89,7 +146,6 @@
         </view>
       </view>
 
-      <!-- 主题设置 -->
       <view class="settings-item" bindtap="onToggleTheme">
         <view class="settings-left">
           <view class="settings-icon settings-icon-blue">🎨</view>
@@ -207,6 +263,47 @@
             </view>
           </view>
           <view wx:if="{{item.code === currentLang}}" class="lang-check">✓</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 资料编辑弹窗 -->
+  <view wx:if="{{showProfileModal}}" class="modal-mask" bindtap="onCloseProfileModal">
+    <view class="modal-content profile-modal" catchtap="noop">
+      <view class="modal-header">
+        <text class="modal-title">{{locale.settings.editProfile}}</text>
+        <view class="modal-close" bindtap="onCloseProfileModal">✕</view>
+      </view>
+      <view class="modal-body profile-body">
+        <!-- 头像：chooseAvatar（基础库 2.21.2+） -->
+        <view class="profile-row">
+          <text class="profile-label">Avatar</text>
+          <button class="avatar-wrapper" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
+            <block wx:if="{{editAvatarUrl}}">
+              <image src="{{editAvatarUrl}}" class="profile-avatar-img" mode="aspectFill" />
+            </block>
+            <block wx:else>
+              <view class="profile-avatar-placeholder">
+                <text class="plus">+</text>
+              </view>
+            </block>
+          </button>
+        </view>
+        <!-- 昵称：type="nickname" input -->
+        <view class="profile-row">
+          <text class="profile-label">Nickname</text>
+          <input class="profile-input"
+            type="nickname"
+            placeholder="Click to fill in WeChat nickname"
+            value="{{editNickName}}"
+            bindinput="onNickNameInput"
+            bindblur="onNickNameInput"
+            maxlength="20" />
+        </view>
+        <!-- 保存按钮 -->
+        <view class="profile-save-row">
+          <button class="save-btn" bindtap="onSaveProfile">{{locale.common.confirm}} Save</button>
         </view>
       </view>
     </view>

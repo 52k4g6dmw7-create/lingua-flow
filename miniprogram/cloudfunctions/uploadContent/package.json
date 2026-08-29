@@ -1,0 +1,9 @@
+{
+  "name": "uploadContent",
+  "version": "1.0.0",
+  "description": "LinguaSpeak - parse text/file uploads into sentence list for training",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

@@ -40,6 +40,7 @@
   "libVersion": "3.0.0",
   "appid": "touristappid",
   "projectname": "lingua-speak",
+  "cloudfunctionRoot": "cloudfunctions/",
   "condition": {},
   "editorSetting": {
     "tabIndent": "insertSpaces",

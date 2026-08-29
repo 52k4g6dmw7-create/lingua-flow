@@ -1,6 +1,15 @@
 // pages/settings/settings.js
+// 真实登录版本：
+//   - 点"登录"调用 app.doLogin() -> wx.login + cloud.login + syncUser，拿到真实 openid
+//   - 头像：使用 button type="avatar" 的新能力（基础库 2.21.2+），不强制弹窗授权
+//   - 昵称：使用 input type="nickname" 组件，支持微信昵称一键填入
+//   - 手机号：button open-type="getPhoneNumber"（仅企业/个体主体可用，可开关）
+//   - 登出：清本地 + globalData
+
 const app = getApp();
 const i18n = require('../../utils/i18n.js');
+const api = require('../../utils/api.js');
+const CONFIG = require('../../config.js');
 
 Page({
   data: {
@@ -9,29 +18,49 @@ Page({
     currentLangDisplay: '',
     supportedLangs: [],
     showLangModal: false,
+    // 资料编辑弹窗
+    showProfileModal: false,
+    // 通知等设置
     notificationEnabled: true,
     reminderTime: '08:00',
     dailyGoal: 30,
-    cacheSize: '12.5 MB',
+    cacheSize: '0 MB',
     themeMode: 'light',
+    // 登录相关
     isLoggedIn: false,
-    userInfo: null
+    userInfo: null,        // { nickName, avatarUrl, phone, _id, openid }
+    // 表单字段（头像昵称编辑）
+    editNickName: '',
+    editAvatarUrl: '',
+    // 功能开关
+    enablePhoneAuth: true,
+    // 云就绪状态
+    cloudReady: false
   },
 
   onLoad: function (options) {
+    this.setData({
+      enablePhoneAuth: !!CONFIG.FEATURES.ENABLE_PHONE_AUTH,
+      cloudReady: !!CONFIG.isCloudConfigured()
+    });
     this.initData();
-    // 如果从快捷入口跳转，直接打开语言选择
+    this.refreshUserInfo();
+    this.calcCacheSize();
+
     if (options && options.lang === '1') {
-      setTimeout(() => {
-        this.setData({ showLangModal: true });
-      }, 300);
+      setTimeout(() => this.setData({ showLangModal: true }), 300);
     }
   },
 
   onShow: function () {
     this.refreshLocale();
+    this.refreshUserInfo();
+    this.setData({
+      cloudReady: !!CONFIG.isCloudConfigured()
+    });
   },
 
+  // ===== 初始化基础数据 =====
   initData: function () {
     const lang = i18n.getLang();
     const langs = i18n.getSupportedLangs();
@@ -44,10 +73,20 @@ Page({
       notificationEnabled: wx.getStorageSync('ls_notification') !== false,
       reminderTime: wx.getStorageSync('ls_reminder_time') || '08:00',
       dailyGoal: wx.getStorageSync('ls_daily_goal') || 30,
-      themeMode: wx.getStorageSync('ls_theme') || 'light',
-      isLoggedIn: !!wx.getStorageSync('ls_user')
+      themeMode: wx.getStorageSync('ls_theme') || 'light'
     });
     this.refreshLocale();
+  },
+
+  // 从 app.globalData / storage 刷新用户信息到视图
+  refreshUserInfo: function () {
+    const user = app.globalData.user || wx.getStorageSync('ls_user') || null;
+    const openid = app.globalData.openid || wx.getStorageSync('ls_openid') || '';
+    const loggedIn = !!(openid && openid.length > 0);
+    this.setData({
+      isLoggedIn: loggedIn,
+      userInfo: loggedIn ? (user || { nickName: '', avatarUrl: '', phone: '' }) : null
+    });
   },
 
   refreshLocale: function () {
@@ -65,14 +104,168 @@ Page({
     });
   },
 
-  // ===== 语言切换 =====
-  onOpenLangModal: function () {
-    this.setData({ showLangModal: true });
+  calcCacheSize: function () {
+    // 粗略估算本地缓存大小
+    try {
+      const info = wx.getStorageInfoSync();
+      const kb = info && info.currentSize ? info.currentSize : 0;
+      this.setData({ cacheSize: (kb / 1024).toFixed(1) + ' MB' });
+    } catch (e) {
+      this.setData({ cacheSize: '0 MB' });
+    }
   },
 
-  onCloseLangModal: function () {
-    this.setData({ showLangModal: false });
+  // ========================== 登录 ==========================
+
+  // 点击用户卡片：已登录→打开资料编辑；未登录→发起真实登录
+  onTapUserCard: function () {
+    if (this.data.isLoggedIn) {
+      const u = this.data.userInfo || {};
+      this.setData({
+        showProfileModal: true,
+        editNickName: u.nickName || '',
+        editAvatarUrl: u.avatarUrl || ''
+      });
+    } else {
+      this.onRealLogin();
+    }
   },
+
+  // 真实登录：不使用废弃的 getUserProfile，直接调用 app.doLogin()
+  // doLogin() 内部：wx.login -> cloud.login(openid) -> cloud.syncUser(init)
+  onRealLogin: function () {
+    const that = this;
+    app.doLogin().then((res) => {
+      that.refreshUserInfo();
+    }).catch((err) => {
+      console.warn('[settings] 登录失败:', err);
+      // 即使失败也尝试刷新（可能已经用了降级模式）
+      that.refreshUserInfo();
+    });
+  },
+
+  // 兼容旧函数名（settings.wxml 原 bindtap="onLogin"）
+  onLogin: function () {
+    if (this.data.isLoggedIn) {
+      this.onTapUserCard();
+    } else {
+      this.onRealLogin();
+    }
+  },
+
+  // ========================== 资料编辑弹窗 ==========================
+
+  onCloseProfileModal: function () {
+    this.setData({ showProfileModal: false });
+  },
+
+  // 头像选择回调（需 wxml 中使用 <button class="avatar-wrapper" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">）
+  onChooseAvatar: function (e) {
+    const url = e.detail && e.detail.avatarUrl;
+    if (url) {
+      this.setData({ editAvatarUrl: url });
+    }
+  },
+
+  // 昵称输入回调：使用 type="nickname" 的 input，bindblur 或 bindinput
+  onNickNameInput: function (e) {
+    const v = (e.detail && e.detail.value) || '';
+    this.setData({ editNickName: v });
+  },
+
+  // 保存资料
+  onSaveProfile: function () {
+    const that = this;
+    const nick = (this.data.editNickName || '').trim();
+    const avatar = this.data.editAvatarUrl || '';
+
+    if (!this.data.isLoggedIn) {
+      wx.showToast({ title: '请先登录', icon: 'none' });
+      return;
+    }
+
+    const patch = {};
+    if (nick.length > 0) patch.nickName = nick.substring(0, 20);
+    if (avatar) patch.avatarUrl = avatar;
+
+    if (Object.keys(patch).length === 0) {
+      this.setData({ showProfileModal: false });
+      return;
+    }
+
+    api.updateUser(patch).then((user) => {
+      app.setLoginSession(app.globalData.openid, user || patch);
+      that.setData({ showProfileModal: false });
+      that.refreshUserInfo();
+      wx.showToast({ title: i18n.t('common.success'), icon: 'success' });
+    }).catch(() => {
+      // 降级：至少本地更新
+      const current = app.globalData.user || {};
+      const merged = Object.assign({}, current, patch);
+      app.setLoginSession(app.globalData.openid, merged);
+      that.setData({ showProfileModal: false });
+      that.refreshUserInfo();
+      wx.showToast({ title: '已保存本地', icon: 'none' });
+    });
+  },
+
+  // ========================== 手机号授权 ==========================
+
+  // 需要：<button open-type="getPhoneNumber" bindgetphonenumber="onGetPhone">
+  onGetPhone: function (e) {
+    const that = this;
+    const detail = e.detail || {};
+    if (detail.errMsg && detail.errMsg.indexOf('ok') === -1) {
+      wx.showToast({ title: '您取消了授权', icon: 'none' });
+      return;
+    }
+    const code = detail.code;
+    if (!code) {
+      wx.showToast({ title: '授权无效，请重试', icon: 'none' });
+      return;
+    }
+    api.bindPhoneNumber(code).then((res) => {
+      if (res && res.phone) {
+        // 本地也同步
+        const current = app.globalData.user || {};
+        const merged = Object.assign({}, current, { phone: res.phone });
+        app.setLoginSession(app.globalData.openid, merged);
+        that.refreshUserInfo();
+        wx.showToast({ title: '已绑定手机号', icon: 'success' });
+      } else if (res && res._mock) {
+        wx.showToast({ title: '本地模式：手机号已模拟绑定', icon: 'none' });
+      } else {
+        wx.showToast({ title: (res && res.errorMsg) || '绑定失败', icon: 'none' });
+      }
+    }).catch((err) => {
+      console.warn('[settings] bindPhone err:', err);
+    });
+  },
+
+  // ========================== 登出 ==========================
+
+  onLogout: function () {
+    const that = this;
+    wx.showModal({
+      title: i18n.t('settings.logout', i18n.getLang()),
+      content: '确定退出登录吗？进度数据在云端不会丢失，下次登录后会自动同步。',
+      confirmText: i18n.t('common.confirm'),
+      cancelText: i18n.t('common.cancel'),
+      confirmColor: '#e74c3c',
+      success: (res) => {
+        if (res.confirm) {
+          app.logout();
+          that.refreshUserInfo();
+          wx.showToast({ title: '已退出登录', icon: 'none' });
+        }
+      }
+    });
+  },
+
+  // ========================== 语言切换 ==========================
+
+  onOpenLangModal: function () { this.setData({ showLangModal: true }); },
+  onCloseLangModal: function () { this.setData({ showLangModal: false }); },
 
   onSelectLang: function (e) {
     const langCode = e.currentTarget.dataset.code;
@@ -80,7 +273,6 @@ Page({
       this.setData({ showLangModal: false });
       return;
     }
-    // 切换语言
     const success = app.switchLanguage(langCode);
     if (success) {
       const langs = i18n.getSupportedLangs();
@@ -95,125 +287,63 @@ Page({
         icon: 'success',
         duration: 2000
       });
-      // 通知其他tab页刷新语言
       const pages = getCurrentPages();
       pages.forEach(p => {
-        if (p && typeof p.refreshLocale === 'function' && p !== this) {
-          p.refreshLocale();
-        }
+        if (p && typeof p.refreshLocale === 'function' && p !== this) p.refreshLocale();
       });
     } else {
-      wx.showToast({
-        title: i18n.t('common.fail'),
-        icon: 'error'
-      });
+      wx.showToast({ title: i18n.t('common.fail'), icon: 'error' });
     }
   },
 
-  // ===== 通知开关 =====
+  // ===== 其他设置 =====
   onToggleNotification: function (e) {
     const value = e.detail.value;
     this.setData({ notificationEnabled: value });
     wx.setStorageSync('ls_notification', value);
-    wx.showToast({
-      title: value ? 'Reminder ON' : 'Reminder OFF',
-      icon: 'none'
-    });
+    wx.showToast({ title: value ? 'Reminder ON' : 'Reminder OFF', icon: 'none' });
   },
 
-  // ===== 提醒时间 =====
   onChangeReminderTime: function (e) {
     const value = e.detail.value;
     this.setData({ reminderTime: value });
     wx.setStorageSync('ls_reminder_time', value);
-    wx.showToast({
-      title: value,
-      icon: 'none'
-    });
   },
 
-  // ===== 每日目标 =====
   onChangeDailyGoal: function (e) {
     const value = e.detail.value;
     this.setData({ dailyGoal: value });
     wx.setStorageSync('ls_daily_goal', value);
   },
 
-  // ===== 主题切换 =====
   onToggleTheme: function () {
     const modes = ['light', 'dark'];
-    const currentIdx = modes.indexOf(this.data.themeMode);
-    const nextIdx = (currentIdx + 1) % modes.length;
-    const nextMode = modes[nextIdx];
+    const nextMode = modes[(modes.indexOf(this.data.themeMode) + 1) % modes.length];
     this.setData({ themeMode: nextMode });
     wx.setStorageSync('ls_theme', nextMode);
-    wx.showToast({
-      title: 'Theme: ' + nextMode,
-      icon: 'none'
-    });
+    wx.showToast({ title: 'Theme: ' + nextMode, icon: 'none' });
   },
 
-  // ===== 清除缓存 =====
+  // 真实清除缓存
   onClearCache: function () {
     const that = this;
     wx.showModal({
       title: i18n.t('settings.clearCache', i18n.getLang()),
-      content: '确定要清除缓存吗？',
+      content: '将清除本地缓存（不影响云端数据，包括登录态、进度、录音等）',
       confirmText: i18n.t('common.confirm'),
       cancelText: i18n.t('common.cancel'),
       success: function (res) {
         if (res.confirm) {
-          // 模拟清除缓存
+          try { wx.clearStorageSync(); } catch (e) {}
           setTimeout(() => {
-            that.setData({ cacheSize: '0 MB' });
+            that.calcCacheSize();
+            that.initData();
+            that.refreshUserInfo();
             wx.showToast({
               title: i18n.t('toast.cacheCleared'),
               icon: 'success'
             });
-          }, 500);
-        }
-      }
-    });
-  },
-
-  // ===== 账号相关 =====
-  onLogin: function () {
-    wx.showModal({
-      title: i18n.t('settings.login', i18n.getLang()),
-      content: '登录后可同步学习进度到云端',
-      confirmText: i18n.t('common.confirm'),
-      cancelText: i18n.t('common.cancel'),
-      success: (res) => {
-        if (res.confirm) {
-          wx.setStorageSync('ls_user', { nickName: 'User' });
-          this.setData({
-            isLoggedIn: true,
-            userInfo: { nickName: 'User', avatar: '👤' }
-          });
-          wx.showToast({
-            title: i18n.t('common.success'),
-            icon: 'success'
-          });
-        }
-      }
-    });
-  },
-
-  onLogout: function () {
-    wx.showModal({
-      title: i18n.t('settings.logout', i18n.getLang()),
-      content: '确定退出登录吗？',
-      confirmText: i18n.t('common.confirm'),
-      cancelText: i18n.t('common.cancel'),
-      confirmColor: '#e74c3c',
-      success: (res) => {
-        if (res.confirm) {
-          wx.removeStorageSync('ls_user');
-          this.setData({ isLoggedIn: false, userInfo: null });
-          wx.showToast({
-            title: 'Logged out',
-            icon: 'none'
-          });
+          }, 400);
         }
       }
     });
@@ -221,9 +351,11 @@ Page({
 
   // ===== 关于 / 隐私 / 反馈 =====
   onAbout: function () {
+    const openid = app.globalData.openid || wx.getStorageSync('ls_openid') || '未登录';
+    const env = CONFIG.isCloudConfigured() ? '已配置' : '未配置(降级模式)';
     wx.showModal({
-      title: 'About LinguaSpeak',
-      content: 'Version: 1.0.0\n\nLinguaSpeak 多语言朗读训练小程序\n\n© 2025 LinguaSpeak Team',
+      title: 'LinguaSpeak',
+      content: `版本: 1.0.0\n云环境: ${env}\n用户ID: ${openid.substring(0, 12)}${openid.length > 12 ? '...' : ''}\n\n© 2025 LinguaSpeak`,
       showCancel: false,
       confirmText: i18n.t('common.confirm')
     });
@@ -232,7 +364,7 @@ Page({
   onPrivacy: function () {
     wx.showModal({
       title: i18n.t('settings.privacy', i18n.getLang()),
-      content: '我们重视您的隐私。\n您的语音和学习数据仅用于提供训练服务，不会泄露给第三方。',
+      content: '我们重视您的隐私。\n- 语音文件仅用于发音评分，不对外公开。\n- 学习数据仅用于您个人的进度同步。\n- 不会将您的信息分享给任何第三方。',
       showCancel: false
     });
   },
@@ -240,18 +372,14 @@ Page({
   onFeedback: function () {
     wx.showModal({
       title: i18n.t('settings.feedback', i18n.getLang()),
-      content: '请通过邮件发送您的反馈：\nfeedback@linguaspeak.com',
+      content: '反馈邮箱：feedback@linguaspeak.com\n在微信小程序后台也可直接留言。',
       showCancel: false
     });
   },
 
-  // 阻止模态层内部点击冒泡
   noop: function () {},
 
-  // FAB跳转到朗读
   onGoRead: function () {
-    wx.navigateTo({
-      url: '/pages/read/read?plan=settings'
-    });
+    wx.navigateTo({ url: '/pages/read/read?plan=settings' });
   }
 });

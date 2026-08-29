@@ -1,20 +1,23 @@
 // pages/upload/upload.js
+// 真实上传版本：
+//   - 文本：api.createTextContent() -> 云函数 uploadContent type=text -> 写 contents 集合 + 分句
+//   - 文件：先 cloud.upload 上传到云存储 -> 云函数 uploadContent type=file 下载解析分句
+//   - 历史：api.listContentHistory() 拉云端历史，失败用本地兜底
+
 const app = getApp();
 const i18n = require('../../utils/i18n.js');
+const api = require('../../utils/api.js');
+const cloud = require('../../utils/cloud.js');
 
 Page({
   data: {
     locale: {},
     currentLang: 'zh',
-    // 文本内容
     inputText: '',
     textLength: 0,
     maxLength: 5000,
-    // 上传历史
     history: [],
-    // 选择的文件
     selectedFile: null,
-    // 目标语言选择
     targetLang: 'en',
     targetLangs: [
       { code: 'zh', native: '中文', flag: '🇨🇳' },
@@ -22,12 +25,11 @@ Page({
       { code: 'ja', native: '日本語', flag: '🇯🇵' },
       { code: 'ko', native: '한국어', flag: '🇰🇷' },
       { code: 'fr', native: 'Français', flag: '🇫🇷' }
-    ]
+    ],
+    submitting: false
   },
 
-  onLoad: function () {
-    this.initData();
-  },
+  onLoad: function () { this.initData(); },
 
   onShow: function () {
     this.refreshLocale();
@@ -47,35 +49,53 @@ Page({
       currentLang: lang,
       targetLang: this.data.targetLang || lang
     });
-    wx.setNavigationBarTitle({
-      title: i18n.t('tabBar.upload', lang)
+    wx.setNavigationBarTitle({ title: i18n.t('tabBar.upload', lang) });
+  },
+
+  // 加载历史：优先云端，失败本地
+  loadHistory: function () {
+    const that = this;
+    api.listContentHistory().then((list) => {
+      // 云端记录格式适配
+      const mapped = Array.isArray(list) ? list.map(item => ({
+        id: item._id || item.contentId || ('c' + Math.random()),
+        content: (item.title || item.text || '').substring(0, 100),
+        contentFull: item.text || '',
+        sentences: item.sentences || [],
+        targetLang: item.lang || that.data.targetLang,
+        type: item.type || 'text',
+        size: (item.text && item.text.length) || 0,
+        time: that.formatDate(new Date(item.createdAt || Date.now()))
+      })) : [];
+      if (mapped.length > 0) {
+        that.setData({ history: mapped });
+        that.saveLocalHistory(mapped);
+      } else {
+        that.setData({ history: that.getLocalHistory() });
+      }
+    }).catch(() => {
+      that.setData({ history: that.getLocalHistory() });
     });
   },
 
-  // 加载历史
-  loadHistory: function () {
-    try {
-      const history = wx.getStorageSync('ls_upload_history') || [];
-      this.setData({ history: history });
-    } catch (e) {
-      console.warn('加载上传历史失败', e);
-    }
+  getLocalHistory: function () {
+    try { return wx.getStorageSync('ls_upload_history') || []; } catch (e) { return []; }
   },
 
-  // 保存历史
+  saveLocalHistory: function (list) {
+    try {
+      const trimmed = (list || []).slice(0, 20);
+      wx.setStorageSync('ls_upload_history', trimmed);
+    } catch (e) {}
+  },
+
+  // 兼容旧接口
   saveHistory: function (item) {
-    try {
-      let history = wx.getStorageSync('ls_upload_history') || [];
-      history.unshift(item);
-      if (history.length > 20) history = history.slice(0, 20);
-      wx.setStorageSync('ls_upload_history', history);
-      this.setData({ history: history });
-    } catch (e) {
-      console.warn('保存上传历史失败', e);
-    }
+    const all = [item].concat(this.getLocalHistory()).slice(0, 20);
+    this.saveLocalHistory(all);
+    this.setData({ history: all });
   },
 
-  // 文本输入
   onTextInput: function (e) {
     const value = e.detail.value || '';
     this.setData({
@@ -84,46 +104,26 @@ Page({
     });
   },
 
-  // 粘贴文本
   onPasteText: function () {
     const that = this;
     wx.getClipboardData({
       success: function (res) {
         if (res.data) {
           const clipped = res.data.substring(0, that.data.maxLength);
-          that.setData({
-            inputText: clipped,
-            textLength: clipped.length
-          });
-          wx.showToast({
-            title: that.data.locale.common.success,
-            icon: 'success'
-          });
+          that.setData({ inputText: clipped, textLength: clipped.length });
+          wx.showToast({ title: that.data.locale.common.success, icon: 'success' });
         } else {
-          wx.showToast({
-            title: 'Clipboard empty',
-            icon: 'none'
-          });
+          wx.showToast({ title: 'Clipboard empty', icon: 'none' });
         }
       },
-      fail: function () {
-        wx.showToast({
-          title: 'Paste failed',
-          icon: 'none'
-        });
-      }
+      fail: function () { wx.showToast({ title: 'Paste failed', icon: 'none' }); }
     });
   },
 
-  // 清空输入
   onClearText: function () {
-    this.setData({
-      inputText: '',
-      textLength: 0
-    });
+    this.setData({ inputText: '', textLength: 0 });
   },
 
-  // 选择文件
   onSelectFile: function () {
     const that = this;
     wx.chooseMessageFile({
@@ -139,98 +139,108 @@ Page({
             path: file.path
           }
         });
-        wx.showToast({
-          title: that.data.locale.common.success,
-          icon: 'success'
-        });
+        wx.showToast({ title: that.data.locale.common.success, icon: 'success' });
       },
-      fail: function () {
-        wx.showToast({
-          title: 'Select cancelled',
-          icon: 'none'
-        });
-      }
+      fail: function () { wx.showToast({ title: 'Select cancelled', icon: 'none' }); }
     });
   },
 
-  // 移除已选文件
-  onRemoveFile: function () {
-    this.setData({ selectedFile: null });
-  },
+  onRemoveFile: function () { this.setData({ selectedFile: null }); },
 
-  // 选择目标语言
   onSelectTargetLang: function (e) {
-    const code = e.currentTarget.dataset.code;
-    this.setData({ targetLang: code });
+    this.setData({ targetLang: e.currentTarget.dataset.code });
   },
 
-  // 开始训练（提交）
+  // 真实提交
   onStartTraining: function () {
+    const that = this;
     const text = this.data.inputText;
     const file = this.data.selectedFile;
 
     if (!text && !file) {
-      wx.showToast({
-        title: 'Please enter text or select file',
-        icon: 'none'
-      });
+      wx.showToast({ title: 'Please enter text or select file', icon: 'none' });
       return;
     }
 
-    if (text && text.trim().length < 10) {
-      wx.showToast({
-        title: 'At least 10 characters',
-        icon: 'none'
-      });
+    if (text && text.trim().length < 5) {
+      wx.showToast({ title: 'At least 5 characters', icon: 'none' });
       return;
     }
 
-    wx.showLoading({
-      title: this.data.locale.common.loading,
-      mask: true
-    });
+    if (this.data.submitting) return;
+    this.setData({ submitting: true });
+    wx.showLoading({ title: this.data.locale.common.loading, mask: true });
 
-    setTimeout(() => {
+    const targetLang = this.data.targetLang;
+
+    const handleResult = (res) => {
       wx.hideLoading();
-      // 保存到历史
-      const historyItem = {
-        id: Date.now(),
-        content: (text || file.name).substring(0, 100),
+      that.setData({ submitting: false });
+      if (!res || !res.sentences || res.sentences.length === 0) {
+        wx.showToast({ title: (res && res.errorMsg) || '解析失败', icon: 'none' });
+        return;
+      }
+
+      // 插入到历史
+      const item = {
+        id: res.contentId || Date.now(),
+        content: (res.title || text || (file && file.name) || '').substring(0, 100),
         contentFull: text,
-        targetLang: this.data.targetLang,
+        sentences: res.sentences,
+        targetLang: res.lang || targetLang,
         type: file ? 'file' : 'text',
         size: file ? file.size : text.length,
-        time: this.formatDate(new Date())
+        time: that.formatDate(new Date())
       };
-      this.saveHistory(historyItem);
+      that.saveHistory(item);
 
-      // 跳转到朗读页面，携带自定义内容
-      const sentences = this.splitIntoSentences(text || 'Custom content uploaded. Start practicing!');
-      app.globalData.customSentences = sentences;
-      app.globalData.customLang = this.data.targetLang;
-
-      this.setData({
-        inputText: '',
-        textLength: 0,
-        selectedFile: null
+      // 跳朗读页
+      app.globalData.customSentences = res.sentences;
+      app.globalData.customLang = res.lang || targetLang;
+      that.setData({
+        inputText: '', textLength: 0, selectedFile: null
       });
+      wx.navigateTo({ url: '/pages/read/read?plan=custom_' + item.id });
+    };
 
-      wx.navigateTo({
-        url: '/pages/read/read?plan=custom_' + historyItem.id
+    const handleError = (err) => {
+      wx.hideLoading();
+      that.setData({ submitting: false });
+      console.warn('[upload] submit err:', err && err.errMsg || err);
+      // 本地兜底：至少还能跳转
+      const fallback = text
+        ? that.splitIntoSentences(text)
+        : ['Uploaded content parsed locally.', 'Please start reading.'];
+      handleResult({
+        contentId: 'local_' + Date.now(),
+        sentences: fallback,
+        lang: targetLang
       });
-    }, 800);
+      wx.showToast({ title: '本地解析模式', icon: 'none' });
+    };
+
+    if (text) {
+      // 文本路径
+      api.createTextContent({ text, lang: targetLang })
+        .then(handleResult)
+        .catch(handleError);
+    } else if (file) {
+      // 文件路径：先上传文件到云存储，再让云函数解析
+      cloud.upload(file.path, `uploads/${Date.now()}_${file.name}`, {
+        loadingText: '上传文件...'
+      }).then((uploadRes) => {
+        return api.parseFileContent(uploadRes.fileID, targetLang);
+      }).then(handleResult).catch(handleError);
+    }
   },
 
-  // 分句处理
   splitIntoSentences: function (text) {
     if (!text) return [];
-    // 按句号、感叹号、问号、换行等分割
     const sentences = text.split(/[\n。！？!?；;]/).map(s => s.trim()).filter(s => s.length > 0);
     if (sentences.length === 0) return [text];
-    return sentences.slice(0, 10);
+    return sentences.slice(0, 20);
   },
 
-  // 清空历史
   onClearHistory: function () {
     const that = this;
     wx.showModal({
@@ -241,46 +251,42 @@ Page({
       confirmColor: '#e74c3c',
       success: function (res) {
         if (res.confirm) {
-          wx.removeStorageSync('ls_upload_history');
+          try { wx.removeStorageSync('ls_upload_history'); } catch (e) {}
           that.setData({ history: [] });
-          wx.showToast({
-            title: that.data.locale.toast.cacheCleared,
-            icon: 'success'
-          });
+          wx.showToast({ title: that.data.locale.toast.cacheCleared, icon: 'success' });
         }
       }
     });
   },
 
-  // 使用历史内容
   onUseHistory: function (e) {
     const id = e.currentTarget.dataset.id;
     const item = this.data.history.find(h => h.id === id);
     if (!item) return;
 
-    if (item.contentFull) {
+    // 如果有 sentences，直接跳转朗读；否则填回文本框
+    if (item.sentences && item.sentences.length > 0) {
+      app.globalData.customSentences = item.sentences;
+      app.globalData.customLang = item.targetLang || this.data.targetLang;
+      wx.navigateTo({ url: '/pages/read/read?plan=custom_' + item.id });
+    } else if (item.contentFull) {
       this.setData({
         inputText: item.contentFull,
         textLength: item.contentFull.length,
         targetLang: item.targetLang || this.data.targetLang
       });
-      wx.pageScrollTo({
-        scrollTop: 0,
-        duration: 300
-      });
-      wx.showToast({
-        title: this.data.locale.common.success,
-        icon: 'success'
-      });
+      wx.pageScrollTo({ scrollTop: 0, duration: 300 });
+      wx.showToast({ title: this.data.locale.common.success, icon: 'success' });
+    } else {
+      wx.showToast({ title: '内容不可用', icon: 'none' });
     }
   },
 
-  // 删除历史单条
   onDeleteHistory: function (e) {
     const id = e.currentTarget.dataset.id;
     const history = this.data.history.filter(h => h.id !== id);
     this.setData({ history: history });
-    wx.setStorageSync('ls_upload_history', history);
+    this.saveLocalHistory(history);
   },
 
   formatDate: function (d) {
@@ -291,10 +297,7 @@ Page({
     return `${m}-${day} ${h}:${min}`;
   },
 
-  // FAB跳转到朗读
   onGoRead: function () {
-    wx.navigateTo({
-      url: '/pages/read/read?plan=upload'
-    });
+    wx.navigateTo({ url: '/pages/read/read?plan=upload' });
   }
 });
