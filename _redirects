@@ -1,0 +1,3 @@
+# SPA fallback — 适配 Netlify / Render static 等托管平台
+# 当 routes 重写规则在托管平台未生效时由该文件兜底
+/*   /index.html   200
