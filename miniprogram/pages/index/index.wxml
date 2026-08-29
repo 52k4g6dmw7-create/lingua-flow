@@ -90,6 +90,31 @@
       </view>
     </view>
 
+    <!-- 雅思目标分卡片（英语用户或已设置过雅思目标分时显示） -->
+    <view wx:if="{{currentLang === 'en' || currentIelts.key}}" class="card ielts-target-card">
+      <view class="card-header">
+        <view class="plan-label">🎯 {{locale.home.targetIelts}} · {{locale.home.currentLevel}}</view>
+        <view class="plan-toggle" bindtap="onSetIeltsTarget">
+          <text class="plan-arrow">▾</text>
+        </view>
+      </view>
+      <view class="ielts-target-content">
+        <view class="ielts-target-left">
+          <view class="ielts-current-band" style="background: {{currentIelts.color}};">
+            <text class="band-label">Band</text>
+            <text class="band-value">{{currentIelts.shortBand || '5.5-6.0'}}</text>
+          </view>
+          <view class="ielts-target-info">
+            <view class="ielts-name">{{currentIelts.displayName || 'IELTS 5.5-6.0'}}</view>
+            <view class="ielts-desc">{{currentIelts.displayDesc || ''}}</view>
+          </view>
+        </view>
+        <view class="ielts-target-btn" style="background: {{currentIelts.color}};" data-plan="{{currentIelts.key}}" bindtap="onStartRead">
+          {{locale.home.startRead}}
+        </view>
+      </view>
+    </view>
+
     <!-- 训练计划卡片 -->
     <view class="card training-card">
       <view class="card-header" bindtap="onTogglePlan">

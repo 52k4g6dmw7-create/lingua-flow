@@ -14,6 +14,14 @@ Page({
     currentDayOfWeek: 17,
     currentPlanKey: 'interviewIntro',
     currentPlanName: '',
+    // IELTS 目标级别
+    currentIelts: {
+      key: 'ielts_5_5',
+      shortBand: '5.5-6.0',
+      color: '#2980b9',
+      displayName: 'IELTS 5.5-6.0',
+      displayDesc: ''
+    },
     // 正在掌握的技能
     masteringSkills: [],
     // 提示横幅
@@ -44,18 +52,51 @@ Page({
       statusBarHeight: app.globalData.statusBarHeight || 20,
       navBarHeight: app.globalData.navBarHeight || 44
     });
+    // 读取本地存储的雅思目标级别（先读，refreshLocale 需要用它拼装显示名称）
+    try {
+      const savedKey = wx.getStorageSync('ls_ielts_target');
+      if (savedKey) {
+        this._ieltsTargetKey = savedKey;
+      }
+    } catch (e) {}
     this.refreshLocale();
     this.loadProgress();
+  },
+
+  // 辅助：根据 key 组装雅思级别展示对象（按当前语言本地化）
+  _buildIeltsDisplay: function (key, lang) {
+    const meta = (app.globalData.ieltsLevelsMeta || []).find(m => m.key === key);
+    if (!meta) {
+      // 兜底：进阶级
+      return {
+        key: 'ielts_5_5',
+        shortBand: '5.5-6.0',
+        color: '#2980b9',
+        displayName: 'IELTS 5.5-6.0',
+        displayDesc: ''
+      };
+    }
+    const l10n = meta[lang] || meta.en || {};
+    return {
+      key: meta.key,
+      shortBand: meta.shortBand,
+      color: meta.color,
+      displayName: l10n.name || meta.en.name,
+      displayDesc: l10n.desc || meta.en.desc
+    };
   },
 
   // 刷新语言包
   refreshLocale: function () {
     const locale = i18n.getLocale();
     const currentLang = i18n.getLang();
+    const ieltsKey = this._ieltsTargetKey || wx.getStorageSync('ls_ielts_target') || 'ielts_5_5';
+    const ieltsDisplay = this._buildIeltsDisplay(ieltsKey, currentLang);
     this.setData({
       locale: locale,
       currentLang: currentLang,
-      currentPlanName: i18n.t('home.' + this.data.currentPlanKey, currentLang)
+      currentPlanName: i18n.t('home.' + this.data.currentPlanKey, currentLang),
+      currentIelts: ieltsDisplay
     });
     // 更新导航栏标题
     wx.setNavigationBarTitle({
@@ -190,15 +231,73 @@ Page({
     });
   },
 
+  // 设定雅思目标分级别
+  onSetIeltsTarget: function () {
+    const currentLang = i18n.getLang();
+    const levels = app.globalData.ieltsLevelsMeta || [];
+    if (levels.length === 0) {
+      wx.showToast({ title: 'IELTS data missing', icon: 'none' });
+      return;
+    }
+    const itemList = levels.map(m => {
+      const l10n = m[currentLang] || m.en || {};
+      const name = l10n.name || m.en.name;
+      return `Band ${m.shortBand} · ${name}`;
+    });
+    wx.showActionSheet({
+      itemList: itemList,
+      success: (res) => {
+        const selected = levels[res.tapIndex];
+        if (!selected) return;
+        // 持久化用户选择
+        try {
+          wx.setStorageSync('ls_ielts_target', selected.key);
+        } catch (e) {}
+        this._ieltsTargetKey = selected.key;
+        // 刷新显示
+        const display = this._buildIeltsDisplay(selected.key, currentLang);
+        // 同时把今日训练计划切换为对应的雅思级别句库
+        const planName = (selected[currentLang] && selected[currentLang].name)
+          || (selected.en && selected.en.name)
+          || `IELTS ${selected.shortBand}`;
+        this.setData({
+          currentIelts: display,
+          currentPlanKey: selected.key,
+          currentPlanName: planName
+        });
+        wx.showToast({
+          title: `Band ${selected.shortBand} ✓`,
+          icon: 'success'
+        });
+      }
+    });
+  },
+
   // 开始朗读
-  onStartRead: function () {
+  onStartRead: function (e) {
+    // 1) 优先从事件 data-plan 取值（雅思目标卡片按钮会显式指定）
+    let planKey = e && e.currentTarget && e.currentTarget.dataset
+      && e.currentTarget.dataset.plan;
+    const currentLang = i18n.getLang();
+    // 2) 否则，如果当前语言=en 且用户设置过雅思目标，则默认走雅思级别句库
+    if (!planKey) {
+      const savedIeltsKey = this._ieltsTargetKey
+        || wx.getStorageSync('ls_ielts_target');
+      if (currentLang === 'en' && savedIeltsKey) {
+        planKey = savedIeltsKey;
+      }
+    }
+    // 3) 兜底：使用训练计划卡片选中的 key
+    if (!planKey) {
+      planKey = this.data.currentPlanKey;
+    }
     const block = app.requireVip();
     if (block && block.blocked) {
       wx.showModal({
         title: block.title,
         content: block.content,
-        confirmText: block.confirmText || (i18n.getLang()==='zh'?'开通会员':'Upgrade'),
-        cancelText: i18n.getLang()==='zh'?'稍后':'Later',
+        confirmText: block.confirmText || (currentLang==='zh'?'开通会员':'Upgrade'),
+        cancelText: currentLang==='zh'?'稍后':'Later',
         success(res){
           if (res.confirm) wx.navigateTo({ url: '/pages/vip/vip?from=index' });
         }
@@ -206,7 +305,7 @@ Page({
       return;
     }
     wx.navigateTo({
-      url: '/pages/read/read?plan=' + encodeURIComponent(this.data.currentPlanKey)
+      url: '/pages/read/read?plan=' + encodeURIComponent(planKey)
     });
   },
 

@@ -46,6 +46,40 @@
       </scroll-view>
     </view>
 
+    <!-- ===== 雅思口语专区入口 ===== -->
+    <view class="ielts-zone-card" bindtap="onOpenIeltsZone" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 60%, #6a82fb 100%);">
+      <view class="ielts-zone-text">
+        <view class="ielts-zone-badge">🎓 IELTS Speaking</view>
+        <view class="ielts-zone-title">{{locale.discover.ieltsZone}}</view>
+        <view class="ielts-zone-desc">{{locale.discover.ieltsZoneDesc}}</view>
+        <view class="ielts-zone-meta">
+          <view class="ielts-tag">Part 1</view>
+          <view class="ielts-tag">Part 2 Cue Card</view>
+          <view class="ielts-tag gold">Part 3 Discussion</view>
+        </view>
+      </view>
+      <view class="ielts-zone-icon">🏅</view>
+    </view>
+
+    <view class="ielts-levels-section">
+      <view class="section-header">
+        <text class="section-title">🎯 {{locale.discover.ieltsLevel}} · {{locale.discover.ieltsTarget}}</text>
+        <text class="section-more">All ›</text>
+      </view>
+      <view class="ielts-level-grid">
+        <view class="ielts-level-card" wx:for="{{ieltsLevels}}" wx:key="key"
+          style="border-left: 8rpx solid {{item.color}};"
+          bindtap="onIeltsLevelTap" data-key="{{item.key}}">
+          <view class="ielts-band" style="color: {{item.color}};">Band {{item.band}}</view>
+          <view class="ielts-name">{{item.displayName}}</view>
+          <view class="ielts-desc">{{item.displayDesc}}</view>
+          <view class="ielts-go-btn" style="background: {{item.color}};">
+            {{locale.discover.enroll}} →
+          </view>
+        </view>
+      </view>
+    </view>
+
     <!-- 为你推荐 -->
     <view class="section">
       <view class="section-header">

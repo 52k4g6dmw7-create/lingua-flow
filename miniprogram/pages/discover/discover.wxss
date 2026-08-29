@@ -152,6 +152,87 @@
   color: var(--primary-dark);
 }
 
+/* ===== 雅思口语专区卡片 ===== */
+.ielts-zone-card {
+  margin: 8rpx 32rpx 24rpx;
+  border-radius: 28rpx;
+  padding: 36rpx 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #fff;
+  box-shadow: 0 10rpx 30rpx rgba(30, 60, 114, 0.28);
+  position: relative;
+  overflow: hidden;
+}
+.ielts-zone-text { flex: 1; display: flex; flex-direction: column; gap: 10rpx; padding-right: 20rpx; }
+.ielts-zone-badge {
+  display: inline-flex; align-self: flex-start;
+  padding: 6rpx 18rpx; border-radius: 999rpx;
+  background: rgba(255,255,255,0.22); font-size: 22rpx; font-weight: 700;
+  backdrop-filter: blur(6px);
+  letter-spacing: 0.5rpx;
+}
+.ielts-zone-title { font-size: 36rpx; font-weight: 800; letter-spacing: 0.5rpx; }
+.ielts-zone-desc  { font-size: 24rpx; opacity: 0.92; line-height: 1.5; }
+.ielts-zone-meta  { margin-top: 16rpx; display: flex; gap: 14rpx; flex-wrap: wrap; }
+.ielts-tag {
+  padding: 6rpx 16rpx; border-radius: 14rpx;
+  background: rgba(255,255,255,0.18);
+  font-size: 22rpx; font-weight: 600;
+}
+.ielts-tag.gold {
+  background: linear-gradient(135deg, #ffd76b, #f2b035);
+  color: #4a3400;
+}
+.ielts-zone-icon {
+  font-size: 120rpx;
+  filter: drop-shadow(0 6rpx 18rpx rgba(0,0,0,0.25));
+  flex-shrink: 0;
+}
+.ielts-levels-section { padding: 8rpx 0 4rpx; }
+.ielts-level-grid {
+  padding: 0 32rpx 24rpx;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20rpx;
+}
+.ielts-level-card {
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 28rpx 24rpx;
+  box-shadow: 0 4rpx 14rpx rgba(0,0,0,0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+.ielts-band {
+  font-size: 40rpx;
+  font-weight: 800;
+  letter-spacing: 1rpx;
+}
+.ielts-name {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.ielts-desc {
+  font-size: 22rpx;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  min-height: 66rpx;
+}
+.ielts-go-btn {
+  margin-top: 8rpx;
+  align-self: flex-start;
+  padding: 10rpx 22rpx;
+  border-radius: 18rpx;
+  color: #fff;
+  font-size: 22rpx;
+  font-weight: 700;
+  letter-spacing: 0.5rpx;
+}
+
 /* ===== 通用区块 ===== */
 .section {
   padding: 16rpx 0 8rpx;

@@ -68,7 +68,9 @@ const translations = {
       progressEnd: '已掌握',
       startRead: '开始朗读',
       interviewIntro: '面试自我介绍',
-      conclusionFirst: '结论先行'
+      conclusionFirst: '结论先行',
+      targetIelts: '雅思目标',
+      currentLevel: '当前雅思级别'
     },
     discover: {
       title: '发现精彩内容',
@@ -82,7 +84,11 @@ const translations = {
       advanced: '高级',
       enroll: '立即学习',
       students: '学员',
-      lessons: '课时'
+      lessons: '课时',
+      ieltsZone: '雅思口语专区',
+      ieltsZoneDesc: '按雅思真题 Part1/2/3 分级训练，冲刺目标分',
+      ieltsLevel: '雅思级别',
+      ieltsTarget: '目标分'
     },
     read: {
       title: '朗读训练',
@@ -101,7 +107,13 @@ const translations = {
       suggestion: '改进建议',
       tip1: '请大声清晰地朗读以下内容',
       tip2: '点击麦克风按钮开始录音',
-      tip3: '录音完成后系统会自动分析您的发音'
+      tip3: '录音完成后系统会自动分析您的发音',
+      ieltsBand: '对应雅思分段',
+      ieltsFluency: '流利性与连贯性',
+      ieltsLexical: '词汇多样性',
+      ieltsGrammar: '语法范围与准确性',
+      ieltsPronunciation: '发音',
+      ieltsNextStep: '下一步提分建议'
     },
     upload: {
       title: '上传内容',
@@ -202,7 +214,9 @@ const translations = {
       progressEnd: 'Mastered',
       startRead: 'Start Reading',
       interviewIntro: 'Interview Self-Introduction',
-      conclusionFirst: 'Conclusion First'
+      conclusionFirst: 'Conclusion First',
+      targetIelts: 'IELTS Target',
+      currentLevel: 'Current IELTS Band'
     },
     discover: {
       title: 'Discover Great Content',
@@ -216,7 +230,11 @@ const translations = {
       advanced: 'Advanced',
       enroll: 'Enroll Now',
       students: 'students',
-      lessons: 'lessons'
+      lessons: 'lessons',
+      ieltsZone: 'IELTS Speaking Zone',
+      ieltsZoneDesc: 'IELTS-style Part 1/2/3 training by band level. Hit your target score.',
+      ieltsLevel: 'IELTS Level',
+      ieltsTarget: 'Target Band'
     },
     read: {
       title: 'Reading Practice',
@@ -235,7 +253,13 @@ const translations = {
       suggestion: 'Suggestions for Improvement',
       tip1: 'Please read the following text aloud clearly',
       tip2: 'Tap the microphone button to start recording',
-      tip3: 'After recording, the system will automatically analyze your pronunciation'
+      tip3: 'After recording, the system will automatically analyze your pronunciation',
+      ieltsBand: 'Equivalent IELTS Band',
+      ieltsFluency: 'Fluency & Coherence',
+      ieltsLexical: 'Lexical Resource',
+      ieltsGrammar: 'Grammatical Range & Accuracy',
+      ieltsPronunciation: 'Pronunciation',
+      ieltsNextStep: 'Next Step to Upgrade Band'
     },
     upload: {
       title: 'Upload Content',
@@ -336,7 +360,9 @@ const translations = {
       progressEnd: '習得済み',
       startRead: '音読を開始',
       interviewIntro: '面接自己紹介',
-      conclusionFirst: '結論先行'
+      conclusionFirst: '結論先行',
+      targetIelts: 'IELTS目標',
+      currentLevel: '現在のIELTSレベル'
     },
     discover: {
       title: 'コンテンツを発見',
@@ -350,7 +376,11 @@ const translations = {
       advanced: '上級',
       enroll: '今すぐ学習',
       students: '人の受講生',
-      lessons: 'レッスン'
+      lessons: 'レッスン',
+      ieltsZone: 'IELTSスピーキング特化',
+      ieltsZoneDesc: 'IELTS本番形式 Part1/2/3 をバンド別にトレーニング。目標点突破へ。',
+      ieltsLevel: 'IELTSレベル',
+      ieltsTarget: '目標バンド'
     },
     read: {
       title: '音読トレーニング',
@@ -369,7 +399,13 @@ const translations = {
       suggestion: '改善のヒント',
       tip1: '以下の文章をはっきりと大きな声で読んでください',
       tip2: 'マイクボタンをタップして録音開始',
-      tip3: '録音後、システムが自動で発音を分析します'
+      tip3: '録音後、システムが自動で発音を分析します',
+      ieltsBand: '換算IELTSバンド',
+      ieltsFluency: '流暢さ・一貫性',
+      ieltsLexical: '語彙力',
+      ieltsGrammar: '文法の幅・正確性',
+      ieltsPronunciation: '発音',
+      ieltsNextStep: 'バンドアップの次の一手'
     },
     upload: {
       title: 'コンテンツをアップロード',
@@ -470,7 +506,9 @@ const translations = {
       progressEnd: '완료',
       startRead: '낭독 시작',
       interviewIntro: '면접 자기소개',
-      conclusionFirst: '결론 우선'
+      conclusionFirst: '결론 우선',
+      targetIelts: 'IELTS 목표',
+      currentLevel: '현재 IELTS 레벨'
     },
     discover: {
       title: '콘텐츠 발견',
@@ -484,7 +522,11 @@ const translations = {
       advanced: '고급',
       enroll: '지금 학습',
       students: '명의 학생',
-      lessons: '강의'
+      lessons: '강의',
+      ieltsZone: 'IELTS 스피킹 존',
+      ieltsZoneDesc: '밴드별 IELTS 실전 Part1/2/3 훈련. 목표 점수 돌파를 위한 커리큘럼.',
+      ieltsLevel: 'IELTS 레벨',
+      ieltsTarget: '목표 밴드'
     },
     read: {
       title: '낭독 훈련',
@@ -503,7 +545,13 @@ const translations = {
       suggestion: '개선 제안',
       tip1: '다음 내용을 크고 명확하게 읽어주세요',
       tip2: '마이크 버튼을 눌러 녹음을 시작하세요',
-      tip3: '녹음이 완료되면 시스템이 자동으로 발음을 분석합니다'
+      tip3: '녹음이 완료되면 시스템이 자동으로 발음을 분석합니다',
+      ieltsBand: '환산 IELTS 밴드',
+      ieltsFluency: '유창성과 연계성',
+      ieltsLexical: '어휘 자원',
+      ieltsGrammar: '문법 범위와 정확성',
+      ieltsPronunciation: '발음',
+      ieltsNextStep: '밴드 업그레이드 다음 단계'
     },
     upload: {
       title: '콘텐츠 업로드',
@@ -604,7 +652,9 @@ const translations = {
       progressEnd: 'Maîtrisé',
       startRead: 'Commencer la lecture',
       interviewIntro: 'Présentation d\'entretien',
-      conclusionFirst: 'Conclusion d\'abord'
+      conclusionFirst: 'Conclusion d\'abord',
+      targetIelts: 'Objectif IELTS',
+      currentLevel: 'Niveau IELTS actuel'
     },
     discover: {
       title: 'Découvrir du contenu',
@@ -618,7 +668,11 @@ const translations = {
       advanced: 'Avancé',
       enroll: 'Commencer',
       students: 'étudiants',
-      lessons: 'leçons'
+      lessons: 'leçons',
+      ieltsZone: 'Zone IELTS Speaking',
+      ieltsZoneDesc: 'Entraînement IELTS Partie 1/2/3 par band. Atteignez votre score cible.',
+      ieltsLevel: 'Niveau IELTS',
+      ieltsTarget: 'Band cible'
     },
     read: {
       title: 'Entraînement de lecture',
@@ -637,7 +691,13 @@ const translations = {
       suggestion: 'Suggestions d\'amélioration',
       tip1: 'Veuillez lire le texte suivant à voix haute et clairement',
       tip2: 'Appuyez sur le bouton micro pour commencer',
-      tip3: 'Après l\'enregistrement, le système analysera automatiquement votre prononciation'
+      tip3: 'Après l\'enregistrement, le système analysera automatiquement votre prononciation',
+      ieltsBand: 'Équivalent band IELTS',
+      ieltsFluency: 'Fluidité & Cohérence',
+      ieltsLexical: 'Ressource lexicale',
+      ieltsGrammar: 'Étendue & Précision grammaticale',
+      ieltsPronunciation: 'Prononciation',
+      ieltsNextStep: 'Prochaine étape pour monter de band'
     },
     upload: {
       title: 'Télécharger du contenu',

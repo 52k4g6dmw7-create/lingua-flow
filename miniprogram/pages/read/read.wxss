@@ -399,6 +399,107 @@
   flex-shrink: 0;
 }
 
+/* ===== IELTS 雅思报告 ===== */
+.ielts-report {
+  background: linear-gradient(180deg, rgba(30, 60, 114, 0.04), #ffffff 70%);
+  border: 2rpx solid #e9eefb;
+  border-radius: 24rpx;
+  padding: 28rpx 24rpx;
+  margin-bottom: 32rpx;
+}
+.ielts-report-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  margin-bottom: 24rpx;
+}
+.ielts-band-badge {
+  display: flex;
+  flex-direction: column;
+  padding: 14rpx 22rpx;
+  border-radius: 20rpx;
+  color: #fff;
+  box-shadow: 0 6rpx 16rpx rgba(0,0,0,0.12);
+}
+.ielts-band-text {
+  font-size: 20rpx;
+  opacity: 0.9;
+  letter-spacing: 0.5rpx;
+  font-weight: 600;
+}
+.ielts-band-score {
+  font-size: 40rpx;
+  font-weight: 800;
+  letter-spacing: 1rpx;
+  line-height: 1.1;
+  margin-top: 4rpx;
+}
+.ielts-band-range {
+  flex: 1;
+  text-align: right;
+  font-size: 26rpx;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.ielts-four-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20rpx 24rpx;
+  margin-bottom: 24rpx;
+}
+.ielts-dim {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+.dim-label {
+  font-size: 22rpx;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+.dim-bar {
+  height: 10rpx;
+  border-radius: 5rpx;
+  background: #f2f2f2;
+  overflow: hidden;
+}
+.dim-fill {
+  height: 100%;
+  border-radius: 5rpx;
+  transition: width 0.5s ease;
+}
+.dim-value {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.dim-sub {
+  font-size: 20rpx;
+  color: var(--text-hint);
+  font-weight: 500;
+  margin-left: 4rpx;
+}
+.ielts-next-step {
+  background: #fff8e6;
+  border-radius: 18rpx;
+  padding: 22rpx;
+  border-left: 6rpx solid #f39c12;
+}
+.next-step-title {
+  display: block;
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #b7780b;
+  margin-bottom: 10rpx;
+}
+.next-step-text {
+  font-size: 24rpx;
+  color: #6e5509;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
 .suggestion-box {
   background-color: #fefcf2;
   border-radius: 20rpx;

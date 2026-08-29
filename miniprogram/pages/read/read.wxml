@@ -82,6 +82,56 @@
           <text class="score-unit">/100</text>
         </view>
       </view>
+
+      <!-- ====== 雅思口语分段报告（仅英语内容显示） ====== -->
+      <view wx:if="{{contentLang === 'en' && result.ielts}}" class="ielts-report">
+        <view class="ielts-report-header">
+          <view class="ielts-band-badge" style="background: {{result.ielts.bandColor}};">
+            <text class="ielts-band-text">{{locale.read.ieltsBand}}</text>
+            <text class="ielts-band-score">{{result.ielts.bandLabel}}</text>
+          </view>
+          <view class="ielts-band-range" style="color: {{result.ielts.bandColor}};">
+            {{result.ielts.bandTitle}}
+          </view>
+        </view>
+
+        <view class="ielts-four-grid">
+          <view class="ielts-dim">
+            <view class="dim-label">{{locale.read.ieltsFluency}}</view>
+            <view class="dim-bar">
+              <view class="dim-fill" style="width: {{result.ielts.fluencyScore}}%; background: {{result.ielts.bandColor}};"></view>
+            </view>
+            <view class="dim-value">{{result.ielts.fluencyScore}} <text class="dim-sub">{{result.ielts.fluencyLevel}}</text></view>
+          </view>
+          <view class="ielts-dim">
+            <view class="dim-label">{{locale.read.ieltsLexical}}</view>
+            <view class="dim-bar">
+              <view class="dim-fill" style="width: {{result.ielts.lexicalScore}}%; background: {{result.ielts.bandColor}};"></view>
+            </view>
+            <view class="dim-value">{{result.ielts.lexicalScore}} <text class="dim-sub">{{result.ielts.lexicalLevel}}</text></view>
+          </view>
+          <view class="ielts-dim">
+            <view class="dim-label">{{locale.read.ieltsGrammar}}</view>
+            <view class="dim-bar">
+              <view class="dim-fill" style="width: {{result.ielts.grammarScore}}%; background: {{result.ielts.bandColor}};"></view>
+            </view>
+            <view class="dim-value">{{result.ielts.grammarScore}} <text class="dim-sub">{{result.ielts.grammarLevel}}</text></view>
+          </view>
+          <view class="ielts-dim">
+            <view class="dim-label">{{locale.read.ieltsPronunciation}}</view>
+            <view class="dim-bar">
+              <view class="dim-fill" style="width: {{result.ielts.pronunciationScore}}%; background: {{result.ielts.bandColor}};"></view>
+            </view>
+            <view class="dim-value">{{result.ielts.pronunciationScore}} <text class="dim-sub">{{result.ielts.pronunciationLevel}}</text></view>
+          </view>
+        </view>
+
+        <view class="ielts-next-step">
+          <text class="next-step-title">🚀 {{locale.read.ieltsNextStep}}</text>
+          <text class="next-step-text">{{result.ielts.nextStepText}}</text>
+        </view>
+      </view>
+
       <view class="result-scores">
         <view class="score-item">
           <view class="score-label">{{locale.read.accuracy}}</view>

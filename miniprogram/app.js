@@ -450,8 +450,185 @@ App({
           'Dans mon précédent poste, j\'ai dirigé le développement de deux projets à grande échelle.',
           'Je suis passionné par les nouvelles technologies et j\'ai une attitude d\'apprentissage continu.'
         ]
+      },
+      dailyLife: {
+        zh: [
+          '我每天早上七点起床，先喝一杯温水再开始工作。',
+          '周末我喜欢和朋友去附近的咖啡馆喝咖啡、聊天。',
+          '最近我开始学习做饭，今天晚上准备尝试做番茄炒蛋。',
+          '上海的交通很便利，地铁几乎可以到达任何地方。',
+          '我觉得保持锻炼非常重要，每周至少跑步三次。'
+        ],
+        en: [
+          'I get up at seven every morning, drink a glass of warm water, and then start working.',
+          'On weekends, I like going to nearby cafes with my friends for coffee and a chat.',
+          'Recently I started learning to cook; tonight I am going to try making tomato and egg stir-fry.',
+          'Public transport in Shanghai is very convenient, and the subway can take you almost anywhere.',
+          'I think it is important to keep exercising, so I go running at least three times a week.'
+        ]
+      },
+      business: {
+        en: [
+          'Today I would like to walk you through our Q3 performance and outline key initiatives for next quarter.',
+          'Our customer retention rate has improved by twelve percent thanks to the new onboarding flow.',
+          'I recommend we prioritize three areas: product localization, channel partnerships, and after-sales support.',
+          'Could we schedule a follow-up meeting next Tuesday to align on the detailed rollout plan?',
+          'In summary, we achieved our revenue target while keeping operational costs below budget.'
+        ]
+      },
+      debate: {
+        en: [
+          'From my perspective, online learning provides greater flexibility and democratizes access to education.',
+          'However, we cannot ignore the fact that face-to-face interaction fosters deeper teamwork and discipline.',
+          'The data clearly indicates that hybrid models yield the highest student satisfaction scores.',
+          'Therefore, I argue that universities should adopt blended learning rather than move fully online.',
+          'To conclude, the decision should balance convenience, pedagogical effectiveness, and equity.'
+        ]
+      },
+      speech: {
+        en: [
+          'Three years ago, I stood on this very stage and failed spectacularly. Today I want to share what I learned.',
+          'The first lesson is simple: progress beats perfection. Even one small step every day compounds over time.',
+          'The second lesson is resilience. Every rejection, every setback, is data you can use to rebuild stronger.',
+          'The third lesson is community. None of us succeeds alone; mentors and teammates accelerate growth.',
+          'So tonight, I challenge each of you to take one tiny step outside your comfort zone before you sleep.'
+        ]
+      },
+      ted: {
+        en: [
+          'Imagine waking up one morning and realizing the skill you feared most is the one that will transform your career.',
+          'For most people, that skill is speaking clearly and confidently in front of others.',
+          'The good news is that speaking, like cooking or cycling, is a trainable habit, not an innate talent.',
+          'Research shows that people who read aloud for just fifteen minutes a day improve their fluency by thirty percent in three months.',
+          'So pick up a paragraph today, read it out loud, and take the first step toward the voice you want.'
+        ]
+      },
+      // ======================== IELTS Speaking 分级训练库（核心升级） ========================
+      // IELTS Band 4.5-5.0: 基础生存语料 — 短句子、简单连接词（and/because）、高频 Part1 话题
+      ielts_4_5: {
+        en: [
+          // Part 1 高频话题：Hometown / Work / Study / Accommodation / Hobbies
+          'I come from a small city in the south of China. It is warm and quiet, and my family still lives there.',
+          'I am a university student majoring in business. I go to class from Monday to Friday and study in the library in the evening.',
+          'I live in an apartment near my university. I share a bedroom with one classmate, and we get along very well.',
+          'In my free time, I usually listen to music or watch movies online. I also play badminton sometimes with my friends.',
+          'My favorite season is spring because the weather is nice and everything looks green and fresh.',
+          'I usually have breakfast at seven o\'clock. I eat bread and drink milk, then I walk to the office or campus.',
+          'Last weekend I visited my grandparents. We had a big dinner together and talked about many old stories.',
+          'I want to improve my English because I plan to study abroad next year, and I need a good IELTS score.',
+          // Part 2 入门级：简短描述人物/地点（2-3 分句/句）
+          'I want to talk about my English teacher. She is about thirty years old and she always smiles in class.',
+          'I would like to describe a cafe I often go to. It is small but comfortable, and the coffee there is not expensive.',
+          // Part 3 基础观点：给出简单原因
+          'I think reading is important because we can learn new words and get more information from books.',
+          'Yes, I believe children should do some housework. It helps them learn responsibility and practical daily skills.'
+        ]
+      },
+      // IELTS Band 5.5-6.0: 进阶表达 — 连接词（however/therefore/in addition）、复合句、Part 2 Cue Card 完整答题
+      ielts_5_5: {
+        en: [
+          // Part 1：回答由 2-3 个分句组成，给出简单扩展
+          'Well, I have been working as a marketing executive for nearly two years now. Although the job can be stressful sometimes, I enjoy the creative tasks such as designing campaigns and writing social media posts.',
+          'As for my accommodation, I currently rent a two-bedroom apartment with two friends in the city center. It is a bit noisy because it is close to the main road, but the location is really convenient for work.',
+          'In terms of hobbies, I am really into photography these days. I usually take my camera out on weekends, especially when the weather is sunny, and I try to capture street scenes and local markets.',
+          // Part 2：Cue Card 级长句（Describe a person / place / experience，150-180 词对应 7-8 句）
+          'I would like to describe an experience when I traveled to Chengdu with my best friend last summer. We booked a cheap flight in advance and stayed in a small hotel near the city center for five days.',
+          'During the trip, we visited several famous pandas bases, tried a lot of local Sichuan food, and walked through the ancient alleys every evening. What impressed me most was how friendly the local people were.',
+          'One night, we got lost in a narrow street on our way back to the hotel, and a young couple helped us find the right direction. They even recommended a great restaurant nearby where we ate the best hot pot I have ever tasted.',
+          'Overall, that trip was memorable not only because of the beautiful scenery but also because I realized how important it is to step outside my comfort zone and meet new people.',
+          // Part 3：讨论观点，使用 "On one hand / On the other hand / Personally"
+          'On one hand, advertising informs consumers about new products and helps them make better purchasing decisions. On the other hand, some advertisements are misleading and encourage people to buy things they do not really need.',
+          'Personally, I think museums should be free for everyone. They play an important role in educating the public about history, culture, and science, and they also attract tourists which benefits the local economy.'
+        ]
+      },
+      // IELTS Band 6.5-7.0: 高分表达 — 高级连接（consequently/nevertheless/by contrast）、虚拟语气、从句嵌套、话题词汇
+      ielts_6_5: {
+        en: [
+          // Part 1：给出带个人感受 + 反例对比的回答
+          'To be honest, I used to dislike public transport because buses in my hometown were often crowded and unreliable. However, since I moved to this city the metro system has been fantastic, and now I actually prefer traveling by subway to driving.',
+          'Well, I am quite into reading historical novels at the moment. I find that they not only entertain me but also give me a deeper insight into how people lived in different periods, which is something I cannot easily get from textbooks.',
+          // Part 2：长段落（200-250 词、地道搭配、语域自然）
+          'I would like to talk about a piece of advice I received from my father when I was choosing my university major. At that time, I was torn between studying computer science, which seemed to offer better job prospects, and literature, which I was truly passionate about.',
+          'My father told me that, in the long run, genuine interest is the most powerful driver of success. He said that if I chose a subject merely for its earning potential, I would probably burn out quickly and regret my decision later on.',
+          'Thanks to his advice, I eventually chose literature. Consequently, I graduated with excellent grades, published several short stories in college magazines, and even won a national writing competition during my final year.',
+          'Looking back, I really appreciate what my father said that day. It taught me that we should never let short-term practicality overshadow long-term personal fulfillment. Without his encouragement, I would not be enjoying my career as a content writer today.',
+          // Part 3：论述型回答（cause-effect + concession + example）
+          'There is no doubt that social media has reshaped the way people communicate. On the positive side, it enables us to stay in touch with friends and relatives regardless of geographical distance, and it also provides a platform for ordinary people to share their voices publicly.',
+          'Nevertheless, we cannot deny the negative consequences. Heavy users often report increased levels of anxiety and loneliness, and teenagers in particular seem to be vulnerable to issues such as cyberbullying and unrealistic beauty standards promoted online.',
+          'From my perspective, the most effective solution is not to ban social media entirely, but to teach digital literacy from an early age so that young users can consume content critically and maintain a healthy balance between online and offline life.'
+        ]
+      },
+      // IELTS Band 7.5+: 冲刺表达 — 地道习语 / 学术型连接词 / 抽象话题深度讨论 / 观点 + 对比 + 数据化表达
+      ielts_7_5: {
+        en: [
+          // Part 1 / Part 2 高级语域：自然、精炼，有修辞
+          'If I had to sum up my attitude toward learning languages, I would say I approach them less as academic subjects and more as gateways to entirely different worldviews. Every idiom I pick up feels like a tiny piece of the puzzle of how another culture thinks.',
+          'I recently took part in a debate competition on climate change, and what struck me most was not the arguments themselves, but how quickly the room became polarized once people felt their identities were tied to a particular position.',
+          'I am a firm believer that travel, when done mindfully, is one of the most humbling and intellectually stimulating experiences we can have. It dismantles stereotypes we did not even know we held and forces us to rethink assumptions we take for granted.',
+          // Part 2：长段 + 高级结构（倒装 / 分词状语 / 同位语从句 / 强调句）
+          'Never have I encountered a book that had such a profound impact on my worldview as "Sapiens" did when I first read it during my gap year. What fascinated me was not the fact that it covered the entire history of humankind, but that it did so through a completely unconventional lens.',
+          'The author argues that it is our ability to believe in shared myths — money, nations, human rights — that has allowed Homo sapiens to cooperate in large numbers and dominate the planet. It was a hypothesis so elegant, yet so counter-intuitive, that I literally could not put the book down.',
+          'By the time I finished the last chapter, I realized that the values I had taken as objective truths were, in fact, historical constructs. That single insight completely changed the way I approach politics, economics, and even my own career choices.',
+          'It is not an exaggeration to say that reading "Sapiens" planted the seed of my decision to pursue a master\'s degree in sociology. Without that book, I doubt I would have the intellectual curiosity or the moral framework that guides my work today.',
+          // Part 3：深度讨论（双层次论证 / 让步 + 反驳 / 展望未来）
+          'Admittedly, the automation of the labor market will almost certainly displace millions of low-skilled workers in the coming decades, and this transition will create genuine hardship for communities that rely heavily on manufacturing and routine service jobs.',
+          'That being said, I would argue that the long-term benefits outweigh the short-term costs. History suggests that technological revolutions ultimately create more jobs than they destroy, provided governments invest heavily in retraining programs and social safety nets to smooth the transition.',
+          'What concerns me most is not technology itself, but our collective failure to distribute its gains fairly. If we allow the wealth created by automation to concentrate in the hands of a tiny minority, we risk undermining the social cohesion that modern democratic societies are built upon.',
+          'In an ideal world, then, policymakers would adopt a three-pronged strategy: first, incentivize lifelong learning through tax credits and subsidies; second, strengthen progressive taxation to reduce inequality; and third, invest in public sectors such as healthcare and education that are inherently labor-intensive and difficult to automate completely.'
+        ]
       }
     },
+    // IELTS 级别元数据（多语言显示 + band 范围 + 图标色）
+    ieltsLevelsMeta: [
+      {
+        key: 'ielts_4_5',
+        band: '4.5 - 5.0',
+        shortBand: '4.5-5.0',
+        color: '#27ae60',
+        targetScenario: 'Foundation: Survival English & Simple Opinions',
+        zh: { name: '雅思基础级', desc: '生存英语 + Part1 简单问答，适合目标 5 分考生' },
+        en: { name: 'IELTS Foundation', desc: 'Survival English & Part 1 Q&A. For target Band 5.0.' },
+        ja: { name: 'IELTS基礎', desc: 'サバイバル英語＋Part1 簡単な受け答え。目標バンド5.0向け' },
+        ko: { name: 'IELTS 기초', desc: '생존 영어 + Part1 기초 질문. 목표 밴드 5.0' },
+        fr: { name: 'Niveau Fondation', desc: 'Anglais de survie + Partie 1. Cible band 5.0.' }
+      },
+      {
+        key: 'ielts_5_5',
+        band: '5.5 - 6.0',
+        shortBand: '5.5-6.0',
+        color: '#2980b9',
+        targetScenario: 'Intermediate: Full Part 2 Cue Cards + Structured Discussion',
+        zh: { name: '雅思进阶级', desc: 'Part 2 完整 Cue Card + Part 3 结构化讨论，适合冲 6 分' },
+        en: { name: 'IELTS Intermediate', desc: 'Full Part 2 cue cards & structured Part 3. Target Band 6.0.' },
+        ja: { name: 'IELTS中級', desc: 'Part2 cue card完全回答＋Part3構造化議論。バンド6.0目指せ' },
+        ko: { name: 'IELTS 중급', desc: 'Part2 완전 답변 + Part3 구조적 토론. 목표 밴드 6.0' },
+        fr: { name: 'Niveau Intermédiaire', desc: 'Partie 2 complète & Partie 3 structurée. Cible band 6.0.' }
+      },
+      {
+        key: 'ielts_6_5',
+        band: '6.5 - 7.0',
+        shortBand: '6.5-7.0',
+        color: '#8e44ad',
+        targetScenario: 'Competent: Idiomatic Speech & Academic Discussion',
+        zh: { name: '雅思高分级', desc: '地道搭配 + 话题词汇 + 让步/因果论证，适合冲 7 分' },
+        en: { name: 'IELTS Competent', desc: 'Idiomatic language, topic vocab, concession & cause-effect. Target Band 7.0.' },
+        ja: { name: 'IELTS上級', desc: 'イディオム＋トピック語彙＋譲歩/因果論述。バンド7.0目指せ' },
+        ko: { name: 'IELTS 고급', desc: '숙어 + 주제 어휘 + 양보/인과 논증. 목표 밴드 7.0' },
+        fr: { name: 'Niveau Compétent', desc: 'Langage idiomatique, concessions & cause-effet. Cible band 7.0.' }
+      },
+      {
+        key: 'ielts_7_5',
+        band: '7.5+',
+        shortBand: '7.5+',
+        color: '#c0392b',
+        targetScenario: 'Advanced: Abstract Topics, Rhetoric, Nuanced Position',
+        zh: { name: '雅思冲刺级', desc: '抽象话题 + 修辞句式 + 双层次论证，适合冲 7.5+ 高分' },
+        en: { name: 'IELTS Advanced', desc: 'Abstract topics, rhetoric, two-layer arguments. Target Band 7.5+.' },
+        ja: { name: 'IELTS最上級', desc: '抽象トピック＋修辞法＋二段階論証。バンド7.5+目指せ' },
+        ko: { name: 'IELTS 최상급', desc: '추상 주제 + 수사법 + 이중 논증. 목표 밴드 7.5+' },
+        fr: { name: 'Niveau Avancé', desc: 'Sujets abstraits, rhétorique & arguments à deux niveaux. Cible band 7.5+.' }
+      }
+    ],
     // 用户自定义句子缓存（上传页→朗读页跳转用）
     customSentences: null,
     customLang: 'en'

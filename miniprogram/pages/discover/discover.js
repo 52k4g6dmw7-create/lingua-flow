@@ -33,28 +33,32 @@ const STATIC_FALLBACK = (lang) => {
 
   return {
     banners: [
-      { id: 1, title: '5-Day Challenge', subtitle: 'Master daily conversations', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', icon: '🚀' },
+      { id: 'ielts', title: 'IELTS Speaking Zone', subtitle: '4.5 → 7.5+ band-by-band training', gradient: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 60%, #6a82fb 100%)', icon: '🏅', jumpIelts: true },
       { id: 2, title: 'New Courses', subtitle: '10+ fresh speaking topics', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', icon: '✨' },
       { id: 3, title: 'Pronunciation', subtitle: 'AI feedback on every sound', gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', icon: '🎯' }
     ],
     recommended: [
+      { id: 'ielts_6_5_r',  key: 'ielts_6_5', name: (lang==='zh'?'雅思高分冲刺 6.5-7.0':'IELTS 6.5-7.0 High Scorer'), difficulty: 2, difficultyLabel: diff[2], students: 15420, lessons: 48, duration: '24h', category: 'ielts', color: '#8e44ad', ielts: true },
       { id: 1, key: 'interview', name: names.interview, difficulty: 1, difficultyLabel: diff[1], students: 12840, lessons: 15, duration: '5h', category: 'career', color: '#2ecc71' },
       { id: 2, key: 'daily',     name: names.daily,     difficulty: 0, difficultyLabel: diff[0], students: 23560, lessons: 20, duration: '6h', category: 'daily',  color: '#3498db' },
       { id: 3, key: 'speech',    name: names.speech,    difficulty: 2, difficultyLabel: diff[2], students: 8920,  lessons: 12, duration: '8h', category: 'speech', color: '#e67e22' }
     ],
     hot: [
+      { id: 'ielts_5_5_h',  key: 'ielts_5_5', name: (lang==='zh'?'雅思进阶 5.5-6.0 提分营':'IELTS 5.5-6.0 Bootcamp'), difficulty: 1, difficultyLabel: diff[1], students: 48260, lessons: 42, duration: '20h', category: 'ielts', color: '#2980b9', hot: true, ielts: true },
       { id: 4, key: 'business', name: names.business, difficulty: 2, difficultyLabel: diff[2], students: 35120, lessons: 18, duration: '10h', category: 'career', color: '#9b59b6', hot: true },
       { id: 5, key: 'debate',   name: names.debate,   difficulty: 2, difficultyLabel: diff[2], students: 18340, lessons: 14, duration: '7h',  category: 'speech', color: '#e74c3c', hot: true },
       { id: 6, key: 'news',     name: names.news,     difficulty: 1, difficultyLabel: diff[1], students: 22180, lessons: 30, duration: '12h', category: 'listening', color: '#1abc9c' },
       { id: 7, key: 'grammar',  name: names.grammar,  difficulty: 0, difficultyLabel: diff[0], students: 45720, lessons: 25, duration: '9h',  category: 'basic', color: '#f39c12', hot: true }
     ],
     newCourses: [
+      { id: 'ielts_7_5_n',  key: 'ielts_7_5', name: (lang==='zh'?'雅思冲刺 7.5+ 高分专项':'IELTS 7.5+ Masterclass'), difficulty: 2, difficultyLabel: diff[2], students: 3120, lessons: 36, duration: '18h', category: 'ielts', color: '#c0392b', isNew: true, ielts: true },
       { id: 8,  key: 'poem',   name: names.poem,   difficulty: 1, difficultyLabel: diff[1], students: 2340, lessons: 10, duration: '4h', category: 'culture', color: '#8e44ad', isNew: true },
       { id: 9,  key: 'accent', name: names.accent, difficulty: 2, difficultyLabel: diff[2], students: 1280, lessons: 16, duration: '6h', category: 'basic',   color: '#16a085', isNew: true },
       { id: 10, key: 'story',  name: names.story,  difficulty: 0, difficultyLabel: diff[0], students: 4560, lessons: 24, duration: '5h', category: 'kids',    color: '#2980b9', isNew: true }
     ],
     categories: [
       { key: 'all',       label: lang==='zh'?'全部':lang==='en'?'All':lang==='ja'?'すべて':lang==='ko'?'전체':'Tout',      icon: '🌟' },
+      { key: 'ielts',     label: lang==='zh'?'雅思':lang==='en'?'IELTS':lang==='ja'?'IELTS':lang==='ko'?'IELTS':'IELTS',   icon: '🏅' },
       { key: 'daily',     label: lang==='zh'?'日常':lang==='en'?'Daily':lang==='ja'?'日常':lang==='ko'?'일상':'Quotidien', icon: '☕' },
       { key: 'career',    label: lang==='zh'?'职场':lang==='en'?'Career':lang==='ja'?'仕事':lang==='ko'?'직장':'Carrière', icon: '💼' },
       { key: 'speech',    label: lang==='zh'?'演讲':lang==='en'?'Speech':lang==='ja'?'スピーチ':lang==='ko'?'연설':'Discours', icon: '🎤' },
@@ -75,14 +79,17 @@ Page({
     activeCategory: 'all',
     searchKeyword: '',
     banners: [],
-    loading: true
+    loading: true,
+    // 雅思 4 个级别
+    ieltsLevels: []
   },
 
   onLoad: function () { this.initData(); },
-  onShow: function () { this.refreshLocale(); },
+  onShow: function () { this.refreshLocale(); this.refreshIeltsLevels(); },
 
   initData: function () {
     this.refreshLocale();
+    this.refreshIeltsLevels();
     this.loadContent();
   },
 
@@ -91,6 +98,57 @@ Page({
     const lang = i18n.getLang();
     this.setData({ locale: locale, currentLang: lang });
     wx.setNavigationBarTitle({ title: i18n.t('tabBar.discover', lang) });
+  },
+
+  // 把 app.globalData.ieltsLevelsMeta 按当前语言翻译成视图层
+  refreshIeltsLevels: function () {
+    const lang = i18n.getLang();
+    const meta = (app.globalData && app.globalData.ieltsLevelsMeta) || [];
+    const list = meta.map(m => {
+      const dict = (m[lang] || m.en || m.zh || {});
+      return Object.assign({}, m, {
+        displayName: dict.name || m.key,
+        displayDesc: dict.desc || m.targetScenario || ''
+      });
+    });
+    this.setData({ ieltsLevels: list });
+  },
+
+  onOpenIeltsZone: function () {
+    const meta = (app.globalData && app.globalData.ieltsLevelsMeta) || [];
+    const lang = i18n.getLang();
+    const names = meta.map(m => {
+      const d = (m[lang] || m.en || m.zh || {});
+      return `🎯 Band ${m.band} — ${d.name || m.key}`;
+    });
+    wx.showActionSheet({
+      itemList: names,
+      success: (res) => {
+        const m = meta[res.tapIndex];
+        if (m) this.onIeltsLevelTap({ currentTarget: { dataset: { key: m.key } } });
+      }
+    });
+  },
+
+  onIeltsLevelTap: function (e) {
+    // 直接跳 read 页加载对应雅思级别题库
+    const key = e.currentTarget.dataset.key;
+    const block = app.requireVip();
+    if (block && block.blocked) {
+      wx.showModal({
+        title: block.title,
+        content: block.content,
+        confirmText: block.confirmText || (i18n.getLang()==='zh'?'开通会员':'Upgrade'),
+        cancelText: i18n.getLang()==='zh'?'稍后':'Later',
+        success(res){
+          if (res.confirm) wx.navigateTo({ url: '/pages/vip/vip?from=ielts' });
+        }
+      });
+      return;
+    }
+    wx.navigateTo({
+      url: '/pages/read/read?plan=' + encodeURIComponent(key) + '&lang=en'
+    });
   },
 
   // 真实动态加载：分别加载 recommended、hot、new
@@ -157,6 +215,12 @@ Page({
 
   onBannerTap: function (e) {
     const id = e.currentTarget.dataset.id;
+    const banners = this.data.banners || [];
+    const item = banners.find(b => String(b.id) === String(id)) || {};
+    if (item.jumpIelts) {
+      this.onOpenIeltsZone();
+      return;
+    }
     wx.showToast({ title: 'Banner ' + id, icon: 'none' });
   },
 
