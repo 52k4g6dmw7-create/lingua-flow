@@ -1,7 +1,7 @@
 {
   "name": "evaluateSpeech",
   "version": "1.0.0",
-  "description": "LinguaSpeak - real speech scoring based on recognized text and target",
+  "description": "LinguaSpeak - real speech scoring (Tencent SOE / Aliyun APE / builtin)",
   "main": "index.js",
   "dependencies": {
     "wx-server-sdk": "~2.6.3"

@@ -225,7 +225,13 @@ App({
         api.getProgress().then((cloudProgress) => {
           if (cloudProgress && typeof cloudProgress === 'object' && cloudProgress.totalDays !== undefined) {
             that.globalData.progress = cloudProgress;
-            try { wx.setStorageSync(progressKey, cloudProgress); } catch (e) {}
+            try {
+              wx.setStorageSync(progressKey, cloudProgress);
+              // 把云端的雅思目标分同步回本地缓存（供首页 UI 读取）
+              if (cloudProgress.ieltsTarget) {
+                wx.setStorageSync('ls_ielts_target', cloudProgress.ieltsTarget);
+              }
+            } catch (e) {}
           }
         }).catch(() => {
           // 忽略云端失败，保留本地

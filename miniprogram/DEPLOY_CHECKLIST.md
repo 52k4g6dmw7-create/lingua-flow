@@ -149,6 +149,69 @@
 - [ ] 用户付费后，**你在线下给他一张激活码**，他在「我的 - 开通Pro会员 - 使用激活码」粘贴即完成开通
 - [ ] 可搭配任何支付渠道收款：微信转账、支付宝、银行卡、抖音小店…… 都可以，**不依赖微信虚拟支付审核**
 
+### ✅ Step 5.8：真实雅思口语评分 API 接入（强烈推荐，让评分从"稳定算法"升级为"官方雅思同源算法"）
+> 这一步是把"模拟评分逻辑"彻底替换成**真实的雅思口语评分 API**。
+> `evaluateSpeech` 云函数按优先级检测环境变量：**腾讯云 SOE → 阿里云 NLS → 内置稳定算法**。
+> 二选一开通即可，同时配置了以腾讯云 SOE 优先（雅思四维度分更准）。
+
+#### 选项 A：腾讯云 SOE（推荐，雅思评分更专业）
+1. 开通服务：访问 [腾讯云智聆口语评测控制台](https://console.cloud.tencent.com/soe) → 同意协议 → 开通服务（有免费额度）
+2. 获取密钥：[腾讯云 API 密钥管理](https://console.cloud.tencent.com/cam/capi) → 新建密钥 → 复制 `SecretId`、`SecretKey`
+3. 部署云函数：微信开发者工具 → `cloudfunctions/evaluateSpeech` → 右键 → **上传并部署（云端安装依赖）**
+4. 配置环境变量：云开发控制台 → 云函数 → `evaluateSpeech` → 配置 → 环境变量 → 添加 3 条：
+   | 变量名 | 值 | 说明 |
+   |--------|----|------|
+   | `SOE_SECRET_ID` | AKIDxxxx（刚刚复制的 SecretId） | 腾讯云 API 密钥 ID |
+   | `SOE_SECRET_KEY` | xxxxx（刚刚复制的 SecretKey） | 腾讯云 API 密钥 Key |
+   | `SOE_REGION` | `ap-beijing` / `ap-shanghai` / `ap-guangzhou` | 选离你最近的地域，默认 ap-beijing |
+5. 保存后等 10 秒生效 → 进入"测试 11"验证
+
+#### 选项 B：阿里云智能语音交互 NLS（备选）
+1. 开通服务：访问 [阿里云 NLS 控制台](https://nls-portal.console.aliyun.com/) → 开通"智能语音交互"
+2. 创建项目：进入「全部项目」→ 新建项目 → 复制**AppKey**（形如 `nls-xxxxxx`，就是 `ALIYUN_APP_KEY`）
+3. 获取 AccessKey：[RAM 密钥管理](https://ram.console.aliyun.com/manage/ak) → 创建 AccessKey → 复制 `AccessKey ID` + `AccessKey Secret`
+4. 部署云函数：同选项 A 第 3 步
+5. 配置环境变量：云开发控制台 → 云函数 → `evaluateSpeech` → 配置 → 环境变量 → 添加 4 条：
+   | 变量名 | 值 | 说明 |
+   |--------|----|------|
+   | `ALIYUN_AK_ID` | LTAIxxxx（AccessKey ID） | 阿里云 API 密钥 ID |
+   | `ALIYUN_AK_SECRET` | xxxxx（AccessKey Secret） | 阿里云 API 密钥 Secret |
+   | `ALIYUN_APP_KEY` | nls-xxxxxx（项目 AppKey，**必填**）| NLS 项目的 AppKey，不是 AK 哦 |
+   | `ALIYUN_REGION` | `cn-shanghai` / `cn-hangzhou` / `cn-beijing` | 默认 cn-shanghai |
+6. 保存后等 10 秒生效 → 进入"测试 11"验证
+
+> 💡 **如何确认真实 API 已生效？** 进入朗读训练页录音评分，Console 里打印的 `evaluatedBy` 字段应为：
+> - 腾讯云 SOE → `tencent-soe`（未传音频→ `tencent-soe(fallback)`，属正常，本项目已自动传音频 fileID）
+> - 阿里云 NLS → `aliyun-ape`（配置缺 AppKey → `aliyun-ape(zh-en-only)` / `aliyun-ape(token-fail)`，回到表格核对）
+> - 两者都没配 → `builtin`（内置稳定算法，也能用于雅思训练，只是评分来源不是官方 API）
+
+### ✅ Step 5.9：云开发进度同步 & 雅思字段配置
+> `progress` 集合的雅思字段（`ieltsTarget` / `ieltsBandHistory` / `lastIeltsBand`）已在 `syncProgress` 云函数中白名单化，**无需手动建字段**，首次调用会自动创建。
+> 但建议做以下 3 件事确保同步稳定：
+
+- [ ] 确认 `syncProgress` 云函数已部署（Step 4 表格第 4 项）
+- [ ] 云开发控制台 → 数据库 → `progress` 集合 → 权限 → 设为 **"仅创建者可读写"**（防跨用户偷看）
+- [ ] 用云端测试传 `{ action: 'set', patch: { ieltsTarget: 'ielts_6_5' } }`，确认 progress 表中出现 `ieltsTarget` 字段且值为 `ielts_6_5`
+- [ ] 再传一次带 `ieltsBandHistory` 的 patch，确认历史是**追加**而不是覆盖（云函数里做了合并去重，最多 200 条）
+  ```json
+  // syncProgress 云端测试参数示例：
+  {
+    "action": "set",
+    "patch": {
+      "ieltsBandHistory": [{
+        "ts": 1740000000000,
+        "date": "2025-01-01",
+        "levelKey": "ielts_6_5",
+        "bandLabel": "6.5-7.0",
+        "avgScore": 82,
+        "planKey": "ielts_6_5_part2",
+        "sentenceCount": 5,
+        "durationSec": 120
+      }]
+    }
+  }
+  ```
+
 ### ✅ Step 6：（可选）手机号授权开关
 - [ ] 如果你是**个人主体小程序**：`config.js` 把 `FEATURES.ENABLE_PHONE_AUTH` 改为 `false`（个人号用不了此能力，不影响其他功能）
 - [ ] 如果你是**企业/个体工商户主体**：保留 `true` 即可，用户授权后手机号会加密解密并写入 users 表 phone 字段
@@ -239,6 +302,27 @@
 
 - [ ] 以上 5 个入口在**免费试用结束后**都弹拦截 Modal，确认跳转正常
 
+#### 📌 测试 11：真实雅思口语评分 API 生效验证
+> 前提：已按 Step 5.8 配置了腾讯云 SOE 或 阿里云 NLS 的环境变量，并重新部署了 evaluateSpeech 云函数。
+
+1. 进入「发现」页 → 雅思专区 → 选择任意级别（如 6.5-7.0 高分）进入训练
+2. 点录音按钮，朗读屏幕上的英语句子，录音时长建议 5-10 秒（确保真实上传音频）
+3. 等评分结果回来，查看 Console 打印的评分结果对象：
+   - ✅ `evaluatedBy` 字段：腾讯云应为 `tencent-soe`，阿里云应为 `aliyun-ape`（不是 builtin / fallback）
+   - ✅ 英语训练一定会带 `ieltsReport` 对象，含 `bandLabel`（如 '6.5-7.0'）、`avgScore`（100 分制）、四维度分 + `nextStepText`（提分建议）
+4. ✅ 报告卡片上会显示雅思 Band 等级徽章（4.5-5.0 / 5.5-6.0 / 6.5-7.0 / 7.5-8.0 / 8.5+）和四维度得分条
+5. （可选）**对照官方雅思评分标准**：找一位近期考出雅思口语真实分数的朋友，用本项目录音 3 句，看 `ieltsReport.bandLabel` 与真实分数的差值是否 ≤ 0.5-1.0 分（官方评分容差）。如果差值持续偏大，可调整 `calcIeltsReport` 中 `pronunciation(0.45) + fluency(0.30) + accuracy(0.25)` 的加权系数。
+
+#### 📌 测试 12：雅思目标分 & 训练历史 云端同步
+1. 到首页 → 雅思目标分卡片（如果没显示，确认 CLOUD_ENV 已填写并登录）→ 点「设定目标」→ 选一个级别（如 6.5-7.0）
+2. ✅ 首页立即显示刚刚选择的目标级别徽章
+3. ✅ 云开发控制台 → progress 集合 → 对应 openid 那条的 `ieltsTarget` 字段应为刚刚选择的 key（如 `ielts_6_5`）
+4. 到雅思专区连续训练至少 2 句，点顶部的「完成所有」按钮
+5. ✅ 跳回首页后，云控制台 progress 集合的 `ieltsBandHistory` 数组中出现至少 1 条历史记录，`lastIeltsBand` 显示最近一次 Band
+6. **跨设备同步验证**：清缓存 → 重启小程序 → 重新登录 → 回到首页
+   - ✅ 目标分徽章仍显示（从云端 `ieltsTarget` 恢复，不是本地写死）
+   - ✅ 雅思训练历史记录仍保留在 `ieltsBandHistory` 数组中（不是空）
+
 ---
 
 ## 第三部分：正式发布前检查清单
@@ -298,13 +382,16 @@
 | 📱 手机号绑定 | 无 | `<button open-type="getPhoneNumber">` → 云函数 `cloud.openapi.phonenumber.getPhoneNumber` 解密 → 写 users.phone | 企业主体真机点击授权，手机号写入 users 表 |
 | 📊 学习进度 | localStorage，清缓存丢失 | `progress` 集合按 openid 唯一键读写，本地先显示 + 云端异步覆盖 | 清缓存后重新登录，进度数据恢复 |
 | 🎤 录音 | wx.getRecorderManager 本地文件 | 本地录音 → `wx.cloud.uploadFile` 上传到云存储 → `records` 集合写元数据 | 云存储 `records/` 目录出现 mp3 文件；records 表有记录 |
-| 🎯 语音评分 | `Math.random()`，结果随机不可信 | ①同声传译插件实时ASR → ②`evaluateSpeech`云函数 Levenshtein 编辑距离 + 多语言语速基准 → 稳定非随机 | 同样句子同样朗读 2 次，分数差 ≤ 10 分；不是 50±30 的乱跳 |
+| 🎯 语音评分 | `Math.random()`，结果随机不可信 | ①同声传译插件实时ASR → ②`evaluateSpeech`云函数 真实调用「腾讯云 SOE（TC3-HMAC-SHA256 签名）/阿里云 NLS（CreateToken + RESTful）」 → 未配置密钥时降级为 Levenshtein 稳定算法 → 服务端统一计算雅思四维度报告 | Console 打印 evaluatedBy：tencent-soe / aliyun-ape / builtin；同样句子 2 次录音分数差 ≤ 10 分；ieltsReport 对象完整包含 bandLabel / avgScore / 四维度分 / nextStepText |
 | 📝 上传文本 | 内存变量，刷新丢失 | `uploadContent` 云函数写 `contents` 集合 | 云控制台 contents 表有新记录；历史列表可回溯 20 条 |
 | 📎 上传文件 | 本地文件名假记录 | 先上传云存储 → 云函数 `cloud.downloadFile` → UTF-8 txt 解析分句 → 入库 | 云存储 `uploads/` 目录有文件；contents 表 sentences 字段正确拆分 |
 | 🔍 发现页课程 | 纯静态写死在页面 JS | 优先查 `courses` 集合（运营可后台录入）；空时返回内置静态多语言数据；最后前端静态兜底 | courses 集合插一条，发现页能显示出来；删掉就回内置数据 |
-| 🌐 多语言 | 界面 5 国语 | 界面 + 课程名称 + 难度 + 评分建议，**全部 5 国语**；用户偏好语言同步到 users.lang | 切换日语/韩语/法语，课程名、Tab、按钮、评分建议全变对应语言 |
+| 🌐 多语言 | 界面 5 国语 | 界面 + 课程名称 + 难度 + 评分建议 + 雅思提分建议，**全部 5 国语**；用户偏好语言同步到 users.lang | 切换日语/韩语/法语，课程名、Tab、按钮、评分建议、ieltsReport.nextStepText 全变对应语言 |
+| 📊 **雅思目标分同步** | 无（仅本地 localStorage） | 首页选目标分 → `wx.setStorageSync` 本地显示 → 立即 `updateProgress({ ieltsTarget })` → 云端 `progress.ieltsTarget` 持久化 → 下次登录 `initProgressData` 自动把云端字段拉回本地缓存 | 清缓存后重新登录，首页目标分徽章和当初设定的一致；progress 表 `ieltsTarget` 字段存在且不为空 |
+| 📊 **雅思训练历史云同步** | 无（只在当前会话变量里） | read.js `onFinishAll` 累计本次 `_lastIeltsSnapshot` → `updateProgress({ ieltsBandHistory: [...], lastIeltsBand })` → syncProgress 云函数做幂等合并（去重 + 按 ts 倒序 + 限 200 条）| 清缓存重登后，`ieltsBandHistory` 数组保留；追加训练后数组条数**增加**（不是覆盖）|
+| 💳 会员系统（1小时免费 + 两档套餐 + 激活码）| 无 | ① `checkVipStatus` 云函数服务端算 freeTrial 剩余时长 + isForever + expiresAt 双鉴权；② 微信虚拟支付 `virtualPayment.sendPayment` 下单；③ `activateKey` 管理员批量生成 + 兑换幂等；④ app.js `requireVip` 统一 5 入口拦截 | 新用户登录倒计时显示 59:59；users 集合 `freeTrialStartedAt` 准确；兑换激活码后 `vip.planKey/isForever` 正确；5 个训练入口在超时时均弹拦截 |
 
-> ✅ **以上 10 个核心模块全部从"模拟"升级为"真实"，达到发布到微信小程序供客户使用的标准。**
+> ✅ **以上 13 个核心模块全部从"模拟"升级为"真实"，达到发布到微信小程序供客户使用的标准。**
 
 ---
 
@@ -333,4 +420,4 @@
 
 ---
 
-**编写版本**：LinguaSpeak v1.0.0 — 最后更新：2025
+**编写版本**：LinguaSpeak v1.1.0 — 最后更新：2025（真实评分 API + 雅思进度云同步 + 会员系统升级）

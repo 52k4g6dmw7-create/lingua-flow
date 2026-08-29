@@ -269,6 +269,12 @@ Page({
           title: `Band ${selected.shortBand} ✓`,
           icon: 'success'
         });
+        // 同步到云端 progress.ieltsTarget（异步，不阻塞 UI；失败自动保留本地）
+        try {
+          app.updateProgress({ ieltsTarget: selected.key });
+        } catch (e) {
+          console.warn('[index] sync ieltsTarget fail:', e);
+        }
       }
     });
   },

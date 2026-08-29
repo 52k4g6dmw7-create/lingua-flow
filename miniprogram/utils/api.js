@@ -170,99 +170,179 @@ function uploadRecord(localPath, opts) {
 
 /**
  * 语音评测：传入识别文本 + 目标文本 + 录音秒数 + 语言
+ * 若 includeIelts=true 且 lang=en，云函数会额外返回 ieltsReport（Band+四维度+提分建议）
  */
 function evaluateSpeech(opts) {
   opts = opts || {};
+  const includeIelts = !!opts.includeIelts;
+  const uiLang = opts.uiLang || i18n.getLang();
   return cloud.call('evaluateSpeech', {
     fileID: opts.fileID || '',
     targetText: opts.targetText || '',
     recognizedText: opts.recognizedText || '', // 前端用同声传译插件已识别的结果
     duration: opts.duration || 0,
-    lang: opts.lang || 'en'
+    lang: opts.lang || 'en',
+    includeIelts,
+    uiLang
   }, {
     loading: true,
-    loadingText: 'Analyzing...',
-    fallback: evaluateFallback(opts)
+    loadingText: includeIelts ? 'IELTS Scoring...' : 'Analyzing...',
+    // 本地降级：如果云不可用，仍保证稳定非随机评分
+    fallback: evaluateFallback(Object.assign({}, opts, { includeIelts, uiLang }))
   }).then(res => res.result);
 }
 
-// 本地降级评分算法（非随机，基于时长+文本）
+// 本地降级评分算法（**稳定非随机**，基于 Levenshtein 文本编辑距离 + 语速基准）
+// 与云函数 evaluateSpeech 的 builtinEvaluate 算法保持一致，保证离线也可复现。
 function evaluateFallback(opts) {
   const target = (opts.targetText || '').trim();
   const recText = (opts.recognizedText || '').trim();
-  const duration = opts.duration || 5;
+  const duration = Math.max(1, Number(opts.duration) || 1);
   const lang = opts.lang || 'en';
   const targetLen = target.length;
-  if (targetLen === 0) return { accuracy: 60, fluency: 60, pronunciation: 60, suggestion: '', recognizedText: recText };
+  if (targetLen === 0) return { accuracy: 60, fluency: 60, pronunciation: 60, suggestion: '', recognizedText: recText, _fallback: true, evaluatedBy: 'local-fallback' };
 
-  // accuracy: 有识别文本用 Levenshtein，否则基于时长估算
+  const bench = CONFIG.FLUENCY_BENCHMARK[lang] || CONFIG.FLUENCY_BENCHMARK.en;
+  const expectedSeconds = Math.max(1, (targetLen / bench) * 60);
+
+  // accuracy: 有识别文本用 Levenshtein，否则基于时长估算（稳定公式）
   let accuracy;
   if (recText) {
+    const recLen = recText.length;
     const d = levenshtein(recText, target);
-    accuracy = Math.max(0, Math.round(100 - d / Math.max(targetLen, recText.length) * 100));
+    const maxLen = Math.max(targetLen, recLen, 1);
+    accuracy = Math.max(0, Math.round(100 - d / maxLen * 100));
   } else {
-    // 基于时长估算：基准每分钟 X 字/词
-    const bench = CONFIG.FLUENCY_BENCHMARK[lang] || CONFIG.FLUENCY_BENCHMARK.en;
-    const expectedSeconds = (targetLen / bench) * 60;
     const ratio = Math.min(duration, expectedSeconds * 2) / expectedSeconds;
-    // ratio 0.8~1.2 最好，越远分越低
     accuracy = Math.max(0, Math.round(100 - Math.abs(1 - Math.min(ratio, 2)) * 120));
   }
 
-  // fluency
-  const bench = CONFIG.FLUENCY_BENCHMARK[lang] || CONFIG.FLUENCY_BENCHMARK.en;
-  const expectedSeconds = Math.max(1, (targetLen / bench) * 60);
+  // fluency：偏离 0.8~1.3 倍基准扣分，无随机性
   const ratio = Math.min(duration, expectedSeconds * 3) / expectedSeconds;
   let fluency;
   if (ratio >= 0.8 && ratio <= 1.3) {
-    fluency = 90 + Math.round(Math.random() * 8);
+    fluency = 92 - Math.round(Math.abs(1 - ratio) * 20);
   } else if (ratio >= 0.5 && ratio <= 1.8) {
-    fluency = 70 + Math.round(Math.random() * 15);
+    fluency = 75 - Math.round(Math.abs(1 - ratio) * 40);
   } else {
     fluency = Math.max(40, Math.round(60 - Math.abs(1 - ratio) * 50));
   }
+  fluency = Math.max(30, Math.min(100, fluency));
 
-  const pronunciation = Math.round(accuracy * 0.7 + fluency * 0.3);
+  const pronunciation = Math.max(30, Math.min(100, Math.round(accuracy * 0.7 + fluency * 0.3)));
 
-  // suggestion 多语言
-  const langCode = i18n.getLang();
+  // suggestion 多语言（稳定提示，无随机）
+  const langCode = opts.uiLang || i18n.getLang();
   const suggestionMap = {
     zh: [
-      accuracy >= 90 ? '很棒，发音准确。' : accuracy >= 70 ? '发音整体不错，可再关注细节。' : '建议放慢语速，逐字读准。',
-      fluency >= 85 ? '流利度很好！' : '可尝试保持更稳定的节奏。',
+      accuracy >= 85 ? '发音准确，继续保持。' : accuracy >= 65 ? '发音整体不错，注意重音与细节。' : '建议放慢语速，逐字读准后再提速。',
+      fluency >= 85 ? '流利度很好，节奏自然。' : fluency >= 65 ? '流利度尚可，保持稳定节奏即可。' : '流利度需要加强，多读几遍，配合录音回放纠正。',
       '坚持每日训练会稳步提升。'
     ],
     en: [
-      accuracy >= 90 ? 'Excellent pronunciation accuracy!' : accuracy >= 70 ? 'Good overall, keep an eye on the tricky sounds.' : 'Try to slow down and articulate each word.',
-      fluency >= 85 ? 'Your fluency is impressive.' : 'Aim for a more consistent pace.',
-      'Practicing daily will bring steady improvement.'
+      accuracy >= 85 ? 'Excellent pronunciation accuracy!' : accuracy >= 65 ? 'Good overall - watch the stress syllables.' : 'Slow down and articulate each word first.',
+      fluency >= 85 ? 'Your fluency is impressive, natural rhythm.' : fluency >= 65 ? 'Aim for a more consistent pace.' : 'Fluency needs work - repeat the sentence more and replay.',
+      'Daily practice will bring steady improvement.'
     ],
     ja: [
-      accuracy >= 90 ? '発音の正確性が素晴らしいです！' : accuracy >= 70 ? '全体的に良好です。細かい音に注意しましょう。' : 'ゆっくりはっきり読みましょう。',
-      fluency >= 85 ? '流暢さは非常に良いです。' : '一定のリズムを心がけましょう。',
-      '毎日続けると上達します。'
+      accuracy >= 85 ? '発音の正確性が素晴らしいです！' : accuracy >= 65 ? '全体的に良好。アクセントの細部を意識しましょう。' : 'ゆっくり、一つ一つはっきり読みましょう。',
+      fluency >= 85 ? '流暢さが非常に良く、リズムも自然です。' : fluency >= 65 ? 'もう少し一定のリズムを意識するとより良いです。' : '流暢さを改善するには、繰り返し再生して修正しましょう。',
+      '毎日続けると確実に上達します。'
     ],
     ko: [
-      accuracy >= 90 ? '발음 정확도가 매우 좋습니다!' : accuracy >= 70 ? '전반적으로 양호하며 세부 소리에 집중하세요.' : '천천히 또렷하게 읽으세요.',
-      fluency >= 85 ? '유창성이 훌륭합니다.' : '일정한 리듬을 유지하세요.',
+      accuracy >= 85 ? '발음 정확도가 매우 좋습니다!' : accuracy >= 65 ? '전반적으로 양호하며 세부 소리에 집중하세요.' : '천천히 또렷하게 읽으세요.',
+      fluency >= 85 ? '유창성이 훌륭하며 리듬이 자연스러워요.' : fluency >= 65 ? '일정한 리듬을 유지하세요.' : '유창성을 높이려면 여러 번 반복하고 재생해 교정하세요.',
       '매일 훈련하면 꾸준히 향상됩니다.'
     ],
     fr: [
-      accuracy >= 90 ? 'Excellent précision de prononciation !' : accuracy >= 70 ? 'Bon niveau global, soignez les détails.' : 'Ralentissez et articulez chaque mot.',
-      fluency >= 85 ? 'Votre fluidité est remarquable.' : 'Visez un rythme plus régulier.',
+      accuracy >= 85 ? 'Excellent précision de prononciation !' : accuracy >= 65 ? 'Bon niveau global, soignez les détails.' : 'Ralentissez et articulez chaque mot.',
+      fluency >= 85 ? 'Votre fluidité est remarquable, rythme naturel.' : fluency >= 65 ? 'Visez un rythme plus régulier.' : 'Pour la fluidité, répétez la phrase plus souvent et réécoutez.',
       'Un entraînement quotidien apportera des progrès constants.'
     ]
   };
   const list = suggestionMap[langCode] || suggestionMap.en;
   const suggestion = list.join(' ');
 
-  return {
+  const result = {
     accuracy: accuracy,
     fluency: fluency,
     pronunciation: pronunciation,
     suggestion: suggestion,
     recognizedText: recText,
-    _fallback: true
+    _fallback: true,
+    evaluatedBy: 'local-fallback',
+    serverEvaluated: false
+  };
+
+  // 如果 includeIelts 且 lang=en，本地也计算雅思报告（稳定公式，前端兜底）
+  if (opts.includeIelts && lang === 'en') {
+    result.ieltsReport = localCalcIeltsReport({
+      accuracy, fluency, pronunciation,
+      targetText: target, recognizedText: recText,
+      duration, uiLang: langCode
+    });
+  }
+
+  return result;
+}
+
+// 本地版雅思四维度报告（与云函数 calcIeltsReport 算法一致，保证一致性）
+function localCalcIeltsReport({ accuracy, fluency, pronunciation, targetText, recognizedText, duration, uiLang }) {
+  const lang = uiLang || 'en';
+  const avg = Math.round(0.45 * pronunciation + 0.30 * fluency + 0.25 * accuracy);
+  const levels = [
+    { band: '4.5-5.0', threshold: 0,   color: '#27ae60', key: 'ielts_4_5',
+      title_zh: '基础级 · 可进行简单日常问答', title_en: 'Foundation. Simple Q&A on daily topics.' },
+    { band: '5.5-6.0', threshold: 60,  color: '#2980b9', key: 'ielts_5_5',
+      title_zh: '进阶级 · 可扩展回答并有基本逻辑', title_en: 'Intermediate. Extended answers with basic logic.' },
+    { band: '6.5-7.0', threshold: 75,  color: '#8e44ad', key: 'ielts_6_5',
+      title_zh: '高分级 · 表达自然，能进行抽象讨论', title_en: 'Competent. Natural speech & abstract discussion.' },
+    { band: '7.5-8.0', threshold: 88,  color: '#c0392b', key: 'ielts_7_5',
+      title_zh: '冲刺级 · 地道表达 + 强论证 + 微瑕不影响理解', title_en: 'Advanced. Idiomatic, coherent & near-native fluency.' },
+    { band: '8.5+',    threshold: 96,  color: '#2c3e50', key: 'ielts_7_5',
+      title_zh: '准母语级 · 考官级表现，几乎无任何错误', title_en: 'Expert. Examiner-level. Virtually no errors.' }
+  ];
+  let chosen = levels[0];
+  for (let i = levels.length - 1; i >= 0; i--) {
+    if (avg >= levels[i].threshold) { chosen = levels[i]; break; }
+  }
+  const chars = String(targetText || '').length;
+  const seconds = Math.max(duration || 1, 1);
+  const cpm = Math.round(chars / seconds * 60);
+  const speedBonus = cpm >= 130 ? 12 : cpm >= 100 ? 6 : cpm >= 70 ? 0 : -6;
+  const fScore = Math.max(30, Math.min(100, Math.round(0.75 * fluency + 0.15 * accuracy + speedBonus)));
+  const words = String(targetText || '').split(/\s+/).filter(Boolean);
+  const avgWordLen = words.length
+    ? (String(targetText || '').replace(/[^a-zA-Z]/g, '').length / words.length) : 3.5;
+  const lexRichness = Math.min(16, Math.max(0, Math.round((avgWordLen - 3.5) * 10)));
+  const lScore = Math.max(30, Math.min(100, Math.round(0.55 * accuracy + 0.25 * pronunciation + 20 + lexRichness)));
+  const advancedMarkers = /(however|therefore|furthermore|nevertheless|although|because|which|who|whose|that|where|when|consequently|moreover|in addition|by contrast|admittedly|that being said)/gi;
+  const markerCount = (String(targetText || '').match(advancedMarkers) || []).length;
+  const gramBonus = Math.min(18, markerCount * 5);
+  const gScore = Math.max(30, Math.min(100, Math.round(0.5 * accuracy + 0.3 * fluency + 15 + gramBonus)));
+  const pScore = Math.max(30, Math.min(100, Math.round(pronunciation)));
+  const levelOf = (s) => s >= 88 ? '(Band 7-8)' : s >= 75 ? '(Band 6-7)' : s >= 60 ? '(Band 5-6)' : '(Band 4-5)';
+
+  return {
+    bandLabel: chosen.band,
+    bandTitle: lang === 'zh' ? chosen.title_zh : chosen.title_en,
+    bandColor: chosen.color,
+    bandKey: chosen.key,
+    avgScore: avg,
+    fluencyScore: fScore, lexicalScore: lScore, grammarScore: gScore, pronunciationScore: pScore,
+    fluencyLevel: levelOf(fScore), lexicalLevel: levelOf(lScore),
+    grammarLevel: levelOf(gScore), pronunciationLevel: levelOf(pScore),
+    nextStepText: lang === 'zh'
+      ? `【本地降级模式】建议开通云开发环境获取更稳定的雅思报告。最弱项：${
+          fScore <= Math.min(lScore, gScore, pScore) ? '流利性'
+            : lScore <= Math.min(gScore, pScore) ? '词汇多样性'
+            : gScore <= pScore ? '语法范围与准确性' : '发音'
+        }。坚持每日训练可稳步提升。`
+      : `[Local fallback] Enable Cloud Base for a richer IELTS report. Weakest: ${
+          fScore <= Math.min(lScore, gScore, pScore) ? 'Fluency'
+            : lScore <= Math.min(gScore, pScore) ? 'Lexical Resource'
+            : gScore <= pScore ? 'Grammar' : 'Pronunciation'
+        }. Keep practicing daily.`
   };
 }
 

@@ -351,48 +351,57 @@ Page({
   },
 
   // ============ 真实评分流程 ============
-  // 1. 上传录音文件到云存储 + 写 records 集合
-  // 2. 调用 evaluateSpeech 云函数（目标句+识别文本+时长）做稳定评分
-  // 3. 将结果显示在 UI，不再使用 Math.random
+  // 1. 上传录音文件到云存储 + 写 records 集合（拿到真实 fileID 给云函数据用）
+  // 2. 调用 evaluateSpeech 云函数：includeIelts 按是否英语训练决定
+  //    → 云函数若命中腾讯云 SOE/阿里云 或 内置 Levenshtein 算法，返回稳定非随机分
+  //    → 英语训练时返回 ieltsReport（Band + 四维度 + 提分建议）
+  // 3. 优先云返回的 ieltsReport，前端 calcIeltsReport 仅兜底
   analyzeResult: function (filePath) {
     const that = this;
     const targetText = this.data.currentSentence || '';
     const duration = Math.max(this.data.recordSeconds, 1);
     const contentLang = this.data.contentLang;
+    const planKey = this.data.planKey || '';
+    const isEnglish = contentLang === 'en';
+    const isIeltsPlan = isEnglish && /^ielts_/.test(planKey);
 
     if (!targetText) {
       that.showFallbackScore('No target text');
       return;
     }
 
-    let recognizedText = (this.data.recognizedText || '').trim();
+    const recognizedText = (this.data.recognizedText || '').trim();
 
-    // Step A: 上传录音（异步，不阻塞评分）
+    // Step A: 上传录音并拿到云端 fileID（等上传完成再评分，保证有真实 fileID）
     const uploadPromise = (async () => {
-      if (!filePath) return null;
+      if (!filePath) return { fileID: '' };
       try {
-        return await api.uploadRecord(filePath, {
-          duration,
-          targetText,
-          contentLang,
+        const res = await api.uploadRecord(filePath, {
+          duration, targetText, contentLang,
           sentenceId: that.data.currentSentenceKey,
-          planKey: that.data.planKey,
+          planKey,
           filename: `${that.data.currentSentenceKey}.mp3`
         });
+        // res 包含 fileID（cloud://...） + recordId
+        return { fileID: (res && res.fileID) || '' };
       } catch (e) {
         console.warn('[read] uploadRecord fail:', e);
-        return null;
+        return { fileID: '' };
       }
     })();
 
-    // Step B: 评分 - 如果有 recognizedText 直接本地+云端一起评，否则仍走云端稳定算法
-    uploadPromise.then(() => {
+    // Step B: 评分 —— 上传完成后拿真实 fileID 调云函数
+    uploadPromise.then((uploadRes) => {
       return api.evaluateSpeech({
-        fileID: that.data.recordFilePath || '',
+        fileID: (uploadRes && uploadRes.fileID) || that.data.recordFilePath || '',
         targetText,
         recognizedText,
         duration,
-        lang: contentLang
+        lang: contentLang,
+        // 英语内容直接传 includeIelts=true，云函数会自己在 lang=en 时返回 ieltsReport
+        includeIelts: isEnglish,
+        uiLang: i18n.getLang(),
+        planKey
       });
     }).then((evalRes) => {
       const result = evalRes && (typeof evalRes === 'object') ? evalRes : {
@@ -401,19 +410,54 @@ Page({
       const accuracy = result.accuracy != null ? result.accuracy : 65;
       const fluency  = result.fluency  != null ? result.fluency  : 65;
       const pronunc  = result.pronunciation != null ? result.pronunciation : 65;
-      const ielts = (contentLang === 'en')
-        ? that.calcIeltsReport({ accuracy, fluency, pronunciation: pronunc, targetText, recognizedText })
-        : null;
+
+      // 雅思报告：优先云返回的 ieltsReport，前端 calcIeltsReport 兜底
+      let ielts = null;
+      if (isEnglish) {
+        ielts = result.ieltsReport && typeof result.ieltsReport === 'object'
+          ? result.ieltsReport
+          : that.calcIeltsReport({ accuracy, fluency, pronunciation: pronunc, targetText, recognizedText });
+      }
+
+      // 保存本次最后一次评分快照，用于 onFinishAll 写雅思训练历史
+      if (ielts && ielts.bandLabel) {
+        that._lastIeltsSnapshot = {
+          ts: Date.now(),
+          date: app.getTodayStr(),
+          levelKey: isIeltsPlan ? planKey : (ielts.bandKey || ''),
+          bandLabel: ielts.bandLabel,
+          avgScore: ielts.avgScore || Math.round(0.45 * pronunc + 0.3 * fluency + 0.25 * accuracy),
+          planKey,
+          sentenceCount: 1,
+          durationSec: duration
+        };
+      } else if (!that._lastIeltsSnapshot && isEnglish) {
+        // 即使没有明确 ielts 报告，也留一次平均分快照
+        const avg = Math.round(0.45 * pronunc + 0.3 * fluency + 0.25 * accuracy);
+        that._lastIeltsSnapshot = {
+          ts: Date.now(),
+          date: app.getTodayStr(),
+          levelKey: isIeltsPlan ? planKey : '',
+          bandLabel: '',
+          avgScore: avg,
+          planKey,
+          sentenceCount: 1,
+          durationSec: duration
+        };
+      }
+
+      const who = result.evaluatedBy
+        ? result.evaluatedBy
+        : (result.serverEvaluated ? 'cloud' : (that.data.siAvailable ? 'plugin+local' : 'local'));
+
       that.setData({
         status: 'complete',
         result: {
-          accuracy,
-          fluency,
-          pronunciation: pronunc,
+          accuracy, fluency, pronunciation: pronunc,
           suggestion: result.suggestion || '',
           recognizedText: result.recognizedText || recognizedText || '',
           recordSeconds: duration,
-          evaluatedBy: result.serverEvaluated ? 'cloud' : (that.data.siAvailable ? 'plugin+local' : 'local'),
+          evaluatedBy: who,
           ielts
         }
       });
@@ -616,8 +660,9 @@ Page({
     wx.switchTab({ url: '/pages/index/index' });
   },
 
-  // 完成所有训练 - 真实更新进度到云端
+  // 完成所有训练 - 真实更新进度到云端 progress 集合
   onFinishAll: function () {
+    const that = this;
     const progress = app.getProgress() || {};
     const today = app.getTodayStr();
     const lastDate = progress.lastActiveDate;
@@ -630,8 +675,28 @@ Page({
       consecutiveDays: consecutiveDays,
       totalDays: (progress.totalDays || 0) + (lastDate !== today ? 1 : 0),
       totalMinutes: Math.round((progress.totalMinutes || 0) + addedMinutes),
-      lastActiveDate: today
+      lastActiveDate: today,
+      currentPlan: this.data.planKey
     };
+
+    // 如果是英语训练，追加本次雅思训练历史并更新最后 Band
+    const contentLang = this.data.contentLang;
+    if (contentLang === 'en' && that._lastIeltsSnapshot) {
+      const snap = that._lastIeltsSnapshot;
+      // 累计本次训练的总时长（使用所有句子的 recordSeconds 汇总，如果有的话，没有就用单句快照的 durationSec）
+      const totalSec = Math.max(snap.durationSec, Math.max(this.data.recordSeconds || 0, 0));
+      snap.sentenceCount = Math.max(1, this.data.sentences ? this.data.sentences.length : 1);
+      snap.durationSec = totalSec;
+
+      updates.ieltsBandHistory = [snap];  // 数组，云函数 syncProgress 会 append + 去重
+      if (snap.bandLabel) {
+        updates.lastIeltsBand = snap.bandLabel;
+      }
+      // 若 planKey 本身为雅思级别，顺便更新用户的最近雅思训练级别（辅助首页展示）
+      if (/^ielts_/.test(this.data.planKey)) {
+        updates.ieltsTarget = updates.ieltsTarget || progress.ieltsTarget || this.data.planKey;
+      }
+    }
 
     // 内部会写本地+云端，云端异步不阻塞UI
     app.updateProgress(updates);
